@@ -1,14 +1,13 @@
-package ufsm.csi.cpo.modules.locations;
+package ufsm.csi.cpo.modules.sessions;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class PublishTokenType {
+public class CdrToken {
+    private String countryCode;
+    private String partyId;
     private String uid;
     private TokenType type;
-    private String visualNumber;
-    private String issuer;
-    private String groupId;
+    private String contractId;
 }
