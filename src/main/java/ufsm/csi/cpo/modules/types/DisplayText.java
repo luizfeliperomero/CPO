@@ -1,4 +1,4 @@
-package ufsm.csi.cpo.modules.locations;
+package ufsm.csi.cpo.modules.types;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;

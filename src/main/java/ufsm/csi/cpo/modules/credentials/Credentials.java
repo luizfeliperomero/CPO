@@ -1,16 +1,14 @@
-package ufsm.csi.cpo.modules.locations;
+package ufsm.csi.cpo.modules.credentials;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.modules.versions.URL;
 
+import java.util.List;
+
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class Image {
+public class Credentials {
+    private String token;
     private URL url;
-    private URL thumbnail;
-    private ImageCategory category;
-    private CiString type;
-    private int width;
-    private int height;
+    private List<CredentialsRole> roles;
 }

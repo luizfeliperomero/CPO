@@ -1,13 +1,10 @@
-package ufsm.csi.cpo.modules.sessions;
+package ufsm.csi.cpo.modules.tokens;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class CdrToken {
-    private String countryCode;
-    private String partyId;
-    private String uid;
-    private TokenType type;
+public class EnergyContract {
+    private String supplierName;
     private String contractId;
 }

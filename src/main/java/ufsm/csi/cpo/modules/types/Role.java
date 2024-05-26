@@ -1,4 +1,4 @@
-package ufsm.csi.cpo.modules.credentials;
+package ufsm.csi.cpo.modules.types;
 
 public enum Role {
     CPO,

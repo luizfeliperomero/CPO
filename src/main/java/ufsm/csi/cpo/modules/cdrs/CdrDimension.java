@@ -1,4 +1,4 @@
-package ufsm.csi.cpo.modules.sessions;
+package ufsm.csi.cpo.modules.cdrs;
 
 public class CdrDimension {
     private CdrDimensionType type;

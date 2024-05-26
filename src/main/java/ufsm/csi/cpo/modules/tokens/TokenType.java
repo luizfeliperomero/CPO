@@ -1,4 +1,4 @@
-package ufsm.csi.cpo.modules.sessions;
+package ufsm.csi.cpo.modules.tokens;
 
 public enum TokenType {
     AD_HOC_USER,

@@ -1,14 +1,13 @@
-package ufsm.csi.cpo.modules.locations;
+package ufsm.csi.cpo.modules.chargingprofiles;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import ufsm.csi.cpo.modules.types.DateTime;
 
-import java.security.Timestamp;
+import java.sql.Timestamp;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class ExceptionalPeriod {
-    private DateTime periodBegin;
-    private DateTime periodEnd;
+public class ActiveChargingProfile {
+    private DateTime startDateTime;
+    private ChargingProfile chargingProfile;
 }

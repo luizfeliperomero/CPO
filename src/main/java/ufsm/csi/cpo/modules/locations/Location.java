@@ -1,18 +1,20 @@
 package ufsm.csi.cpo.modules.locations;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import ufsm.csi.cpo.modules.types.CiString;
+import ufsm.csi.cpo.modules.types.DateTime;
+import ufsm.csi.cpo.modules.types.DisplayText;
 
 import java.sql.Timestamp;
 import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class Location {
-    private String countryCode;
-    private String partyId;
-    private String id;
+    private CiString countryCode;
+    private CiString partyId;
+    private CiString id;
     private boolean publish;
     private List<PublishTokenType> publishAllowedTo;
     private String name;
@@ -35,5 +37,5 @@ public class Location {
     private boolean chargingWhenClosed;
     private List<Image> images;
     private EnergyMix energyMix;
-    private Timestamp lastUpdated;
+    private DateTime lastUpdated;
 }

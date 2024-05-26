@@ -1,4 +1,4 @@
-package ufsm.csi.cpo.modules.locations;
+package ufsm.csi.cpo.modules.commands;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -6,11 +6,7 @@ import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.modules.versions.URL;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class Image {
-    private URL url;
-    private URL thumbnail;
-    private ImageCategory category;
-    private CiString type;
-    private int width;
-    private int height;
+public class StopSession {
+    private URL responseUrl;
+    private CiString sessionId;
 }
