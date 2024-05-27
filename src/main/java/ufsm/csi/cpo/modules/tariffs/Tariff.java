@@ -7,9 +7,8 @@ import ufsm.csi.cpo.modules.types.DateTime;
 import ufsm.csi.cpo.modules.types.DisplayText;
 import ufsm.csi.cpo.modules.locations.EnergyMix;
 import ufsm.csi.cpo.modules.sessions.Price;
-import ufsm.csi.cpo.modules.versions.URL;
 
-import java.sql.Timestamp;
+import java.net.URL;
 import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)

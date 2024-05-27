@@ -31,7 +31,8 @@ public class SecurityConfig {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(registry -> {
-            registry.anyRequest().authenticated();
+                    registry.requestMatchers("/credentials/get_token").permitAll();
+                    registry.anyRequest().authenticated();
         })
                 .oauth2ResourceServer(config -> config.jwt(Customizer.withDefaults()))
                 .build();

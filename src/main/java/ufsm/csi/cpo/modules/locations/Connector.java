@@ -1,13 +1,11 @@
 package ufsm.csi.cpo.modules.locations;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.modules.types.DateTime;
-import ufsm.csi.cpo.modules.versions.URL;
 
-import java.security.Timestamp;
+import java.net.URL;
 import java.util.List;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)

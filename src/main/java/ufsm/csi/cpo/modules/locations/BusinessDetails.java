@@ -2,7 +2,8 @@ package ufsm.csi.cpo.modules.locations;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import ufsm.csi.cpo.modules.versions.URL;
+
+import java.net.URL;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class BusinessDetails {

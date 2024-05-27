@@ -8,9 +8,6 @@ import lombok.NoArgsConstructor;
 import ufsm.csi.cpo.modules.locations.BusinessDetails;
 import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.modules.types.Role;
-import ufsm.csi.cpo.modules.versions.URL;
-
-import java.util.List;
 
 @Data
 @AllArgsConstructor

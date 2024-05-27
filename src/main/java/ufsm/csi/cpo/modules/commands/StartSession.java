@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import ufsm.csi.cpo.modules.tokens.Token;
 import ufsm.csi.cpo.modules.types.CiString;
-import ufsm.csi.cpo.modules.versions.URL;
+
+import java.net.URL;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class StartSession {

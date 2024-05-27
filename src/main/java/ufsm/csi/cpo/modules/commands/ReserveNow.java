@@ -5,9 +5,8 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import ufsm.csi.cpo.modules.tokens.Token;
 import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.modules.types.DateTime;
-import ufsm.csi.cpo.modules.versions.URL;
 
-import java.sql.Timestamp;
+import java.net.URL;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class ReserveNow {
