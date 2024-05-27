@@ -1,11 +1,17 @@
 package ufsm.csi.cpo.modules.types;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.val;
+import ufsm.csi.cpo.serialization.CiStringDeserializer;
+import ufsm.csi.cpo.serialization.CiStringSerializer;
 
 @Data
+@JsonSerialize(using = CiStringSerializer.class)
+@JsonDeserialize(using = CiStringDeserializer.class)
 public class CiString {
     private final String value;
     public CiString(String value) {

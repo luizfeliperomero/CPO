@@ -31,6 +31,7 @@ public class CredentialsService {
         if(!platforms.containsKey(partyId)) {
             PlatformInfo platformInfo = PlatformInfo.builder()
                     .token(credentials.getToken())
+                    .versions(Arrays.asList(new VersionDetails()))
                     .build();
             platforms.put(partyId, platformInfo);
             retrieveClientInfo(credentials, partyId);
@@ -45,7 +46,7 @@ public class CredentialsService {
             ObjectMapper objectMapper = new ObjectMapper();
             List<Version> versions = objectMapper.readValue(response, new TypeReference<List<Version>>() {});
             Optional<Version> compatibleVersionOpt = versions.stream()
-                    .filter(v -> v.getVersion().equals(VersionNumber.V2_2_1))
+                    .filter(v -> v.getVersion().toString().equals("2.2.1"))
                     .findFirst();
             if(compatibleVersionOpt.isPresent()) {
                 Version compatibleVersion = compatibleVersionOpt.get();

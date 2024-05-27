@@ -1,10 +1,7 @@
 package ufsm.csi.cpo.modules.credentials;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.security.JwtService;
 
@@ -27,7 +24,7 @@ public class CredentialsController {
     }
 
     @PostMapping()
-    public ResponseEntity<String> exchangeCredentials(Credentials credentials) {
+    public ResponseEntity<String> exchangeCredentials(@RequestBody Credentials credentials) {
         return ResponseEntity.ok(this.credentialsService.exchangeCredentials(credentials));
     }
 }
