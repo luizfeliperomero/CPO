@@ -11,7 +11,7 @@ import ufsm.csi.cpo.security.JwtService;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/2.2.1/credentials")
+@RequestMapping("ocpi/cpo/credentials")
 public class CredentialsController {
     private final JwtService jwtService;
     private final CredentialsService credentialsService;

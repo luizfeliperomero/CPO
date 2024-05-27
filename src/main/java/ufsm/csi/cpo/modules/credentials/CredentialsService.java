@@ -11,11 +11,9 @@ import ufsm.csi.cpo.modules.versions.VersionNumber;
 import ufsm.csi.cpo.security.JwtService;
 
 import javax.net.ssl.HttpsURLConnection;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Scanner;
+import java.util.*;
 
 @Service
 public class CredentialsService {
@@ -23,24 +21,26 @@ public class CredentialsService {
     private final JwtService jwtService;
 
     public CredentialsService(JwtService jwtService) {
+        platforms = new HashMap<>();
         this.jwtService = jwtService;
     }
 
     public String exchangeCredentials(Credentials credentials) {
         CiString partyId = credentials.getRoles().get(0).getPartyId();
-        String token = "";
+        String tokenC = "";
         if(!platforms.containsKey(partyId)) {
             PlatformInfo platformInfo = PlatformInfo.builder()
                     .token(credentials.getToken())
                     .build();
             platforms.put(partyId, platformInfo);
-            token = retrieveClientInfo(credentials, partyId);
+            retrieveClientInfo(credentials, partyId);
+            tokenC = jwtService.generateToken();
         }
-        return token;
+        return tokenC;
     }
 
     @SneakyThrows
-    public String retrieveClientInfo(Credentials credentials, CiString partyId) {
+    public void retrieveClientInfo(Credentials credentials, CiString partyId) {
             String response = httpRequest(credentials.getUrl(), "GET", credentials.getToken());
             ObjectMapper objectMapper = new ObjectMapper();
             List<Version> versions = objectMapper.readValue(response, new TypeReference<List<Version>>() {});
@@ -55,12 +55,12 @@ public class CredentialsService {
                 platformInfo.setVersions(versionDetails);
                 platforms.put(partyId, platformInfo);
             }
-            return jwtService.generateToken();
     }
+
 
     @SneakyThrows
     public String httpRequest(URL url, String method, String token) {
-        HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(method);
         connection.setRequestProperty("Authorization", "Bearer " + token);
         int responseCode = connection.getResponseCode();
