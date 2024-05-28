@@ -1,15 +1,19 @@
 package ufsm.csi.cpo.modules.versions;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import ufsm.csi.cpo.serialization.VersionNumberDeserializer;
 import ufsm.csi.cpo.serialization.VersionNumberSerializer;
 
 @JsonSerialize(using = VersionNumberSerializer.class)
+@JsonDeserialize(using = VersionNumberDeserializer.class)
 public enum VersionNumber {
     V2_0,
     V2_1,
     V2_1_1,
     V2_2,
     V2_2_1;
+
 
     @Override
     public String toString() {
@@ -28,4 +32,5 @@ public enum VersionNumber {
                 return super.toString();
         }
     }
+
 }

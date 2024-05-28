@@ -17,7 +17,7 @@ public class JwtService {
 
     public String generateToken() {
         Instant now = Instant.now();
-        long expiry = 3600L;
+        long expiry = 86400L; // 24 hours
         var claims = JwtClaimsSet.builder()
                 .issuer("cpo")
                 .issuedAt(now)
