@@ -30,7 +30,10 @@ public class VersionController {
         List<Endpoint> endpoints = Arrays.asList(
         new Endpoint(ModuleID.credentials,
                 InterfaceRole.SENDER,
-                new URL("http://localhost:8080/2.2.1/credentials")));
+                new URL("http://localhost:8080/2.2.1/credentials/sender")),
+        new Endpoint(ModuleID.credentials,
+                InterfaceRole.RECEIVER,
+                new URL("http://localhost:8080/2.2.1/credentials/receiver")));
 
         List<VersionDetails> versionDetails = Arrays.asList(new VersionDetails(VersionNumber.V2_2_1, endpoints));
 

@@ -28,10 +28,9 @@ public class CredentialsService {
         platforms = new HashMap<>();
     }
 
-    @SneakyThrows
-    public String exchangeCredentials(Credentials credentials) {
+    public Optional<Endpoint> getCredentialsEndpoint(Credentials credentials, InterfaceRole otherPlatformRole) {
         CiString partyId = credentials.getRoles().get(0).getPartyId();
-        String tokenC = "";
+        Optional<Endpoint> endpointOpt = Optional.empty();
         if(!platforms.containsKey(partyId)) {
             PlatformInfo platformInfo = PlatformInfo.builder()
                     .token(credentials.getToken())
@@ -44,20 +43,32 @@ public class CredentialsService {
                     .findFirst();
             if(versionDetailsOpt.isPresent()) {
                 VersionDetails versionDetails = versionDetailsOpt.get();
-                Optional<Endpoint> endpointOpt = versionDetails.getEndpoints()
+                endpointOpt = versionDetails.getEndpoints()
                         .stream()
-                        .filter(e -> e.getIdentifier().equals(ModuleID.credentials))
+                        .filter(e -> e.getIdentifier().equals(ModuleID.credentials) && e.getRole().equals(otherPlatformRole))
                         .findFirst();
-                if(endpointOpt.isPresent()) {
-                    Endpoint endpoint = endpointOpt.get();
-                    if(!endpoint.getRole().equals(InterfaceRole.SENDER)) {
-                        String tokenB = jwtService.generateToken();
-                        senderLogic(endpoint, tokenB, partyId);
-                    } else {
-                        tokenC = jwtService.generateToken();
-                    }
-                }
             }
+        }
+        return endpointOpt;
+    }
+
+    public void exchangeCredentialsAsSender(Credentials credentials) {
+        CiString partyId = credentials.getRoles().get(0).getPartyId();
+        Optional<Endpoint> credentialsEndpointOpt = getCredentialsEndpoint(credentials, InterfaceRole.RECEIVER);
+        if(credentialsEndpointOpt.isPresent()) {
+            Endpoint credentialsEndpoint = credentialsEndpointOpt.get();
+            String tokenB = jwtService.generateToken();
+            senderLogic(credentialsEndpoint, tokenB, partyId);
+        }
+        System.out.println(platforms.get(partyId));
+    }
+
+    public String exchangeCredentialsAsReceiver(Credentials credentials) {
+        CiString partyId = credentials.getRoles().get(0).getPartyId();
+        Optional<Endpoint> credentialsEndpoint = getCredentialsEndpoint(credentials, InterfaceRole.SENDER);
+        String tokenC = "";
+        if(credentialsEndpoint.isPresent()) {
+           tokenC = jwtService.generateToken();
         }
         System.out.println(platforms.get(partyId));
         return tokenC;

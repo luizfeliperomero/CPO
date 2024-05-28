@@ -1,6 +1,7 @@
 package ufsm.csi.cpo.modules.credentials;
 
 import lombok.SneakyThrows;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ufsm.csi.cpo.modules.types.CiString;
@@ -28,8 +29,15 @@ public class CredentialsController {
     }
 
     @SneakyThrows
-    @PostMapping()
-    public ResponseEntity<String> exchangeCredentials(@RequestBody Credentials credentials) {
-        return ResponseEntity.ok(this.credentialsService.exchangeCredentials(credentials));
+    @PostMapping("/sender")
+    public ResponseEntity<HttpStatus> exchangeCredentialsSender(@RequestBody Credentials credentials) {
+        this.credentialsService.exchangeCredentialsAsSender(credentials);
+        return ResponseEntity.ok(HttpStatus.OK);
+    }
+
+    @SneakyThrows
+    @PostMapping("/receiver")
+    public ResponseEntity<String> exchangeCredentialsReceiver(@RequestBody Credentials credentials) {
+        return ResponseEntity.ok(this.credentialsService.exchangeCredentialsAsReceiver(credentials));
     }
 }
