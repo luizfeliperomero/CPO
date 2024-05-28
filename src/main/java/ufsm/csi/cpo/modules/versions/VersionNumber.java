@@ -14,6 +14,7 @@ public enum VersionNumber {
     V2_2,
     V2_2_1;
 
+
     @Override
     public String toString() {
         switch (this) {
@@ -31,4 +32,5 @@ public enum VersionNumber {
                 return super.toString();
         }
     }
+
 }
