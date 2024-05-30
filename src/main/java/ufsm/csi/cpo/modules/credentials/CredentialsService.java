@@ -4,11 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
-import ufsm.csi.cpo.modules.tokens.Token;
+import ufsm.csi.cpo.data.CpoData;
 import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.modules.types.Role;
 import ufsm.csi.cpo.modules.versions.*;
-import ufsm.csi.cpo.security.JwtService;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.OutputStream;
@@ -20,24 +19,24 @@ import java.util.*;
 
 @Service
 public class CredentialsService {
-    private Map<CiString, PlatformInfo> platforms;
-    private final JwtService jwtService;
+    private final CredentialsTokenService credentialsTokenService;
+    private final CpoData cpoData;
 
-    public CredentialsService(JwtService jwtService) {
-        this.jwtService = jwtService;
-        platforms = new HashMap<>();
+    public CredentialsService(CredentialsTokenService credentialsTokenService) {
+        this.credentialsTokenService = credentialsTokenService;
+        cpoData = CpoData.getInstance();
     }
 
     public Optional<Endpoint> getCredentialsEndpoint(Credentials credentials, InterfaceRole otherPlatformRole) {
         CiString partyId = credentials.getRoles().get(0).getPartyId();
         Optional<Endpoint> endpointOpt = Optional.empty();
-        if(!platforms.containsKey(partyId)) {
+        if(!this.cpoData.getPlatforms().containsKey(partyId)) {
             PlatformInfo platformInfo = PlatformInfo.builder()
-                    .token(credentials.getToken())
+                    .token(this.credentialsTokenService.decodeToken(credentials.getToken()))
                     .build();
-            platforms.put(partyId, platformInfo);
+            this.cpoData.getPlatforms().put(partyId, platformInfo);
             retrieveClientInfo(credentials, partyId);
-            Optional<VersionDetails> versionDetailsOpt = platforms.get(partyId).getVersions()
+            Optional<VersionDetails> versionDetailsOpt = this.cpoData.getPlatforms().get(partyId).getVersions()
                     .stream()
                     .filter(v -> v.getVersion().toString().equals("2.2.1"))
                     .findFirst();
@@ -57,10 +56,11 @@ public class CredentialsService {
         Optional<Endpoint> credentialsEndpointOpt = getCredentialsEndpoint(credentials, InterfaceRole.RECEIVER);
         if(credentialsEndpointOpt.isPresent()) {
             Endpoint credentialsEndpoint = credentialsEndpointOpt.get();
-            String tokenB = jwtService.generateToken();
+            String tokenB = credentialsTokenService.generateToken();
+            this.cpoData.getValidCredentialsTokens().add(tokenB);
             senderLogic(credentialsEndpoint, tokenB, partyId);
         }
-        System.out.println(platforms.get(partyId));
+        System.out.println(this.cpoData.getPlatforms().get(partyId));
     }
 
     public String exchangeCredentialsAsReceiver(Credentials credentials) {
@@ -68,9 +68,10 @@ public class CredentialsService {
         Optional<Endpoint> credentialsEndpoint = getCredentialsEndpoint(credentials, InterfaceRole.SENDER);
         String tokenC = "";
         if(credentialsEndpoint.isPresent()) {
-           tokenC = jwtService.generateToken();
+           tokenC = credentialsTokenService.generateToken();
+            this.cpoData.getValidCredentialsTokens().add(tokenC);
         }
-        System.out.println(platforms.get(partyId));
+        System.out.println(this.cpoData.getPlatforms().get(partyId));
         return tokenC;
     }
 
@@ -83,17 +84,17 @@ public class CredentialsService {
                 .build();
         Credentials emspCredentials = Credentials.builder()
                 .url(new URL("http://localhost:8080/ocpi/cpo/versions"))
-                .token(tokenB)
+                .token(this.credentialsTokenService.encodeToken(tokenB))
                 .roles(Arrays.asList(credentialsRole))
                 .build();
-        String tokenC = httpRequest(endpoint.getUrl(), "POST", tokenB, emspCredentials);
-        PlatformInfo platformInfo1 = platforms.get(partyId);
+        PlatformInfo platformInfo1 = this.cpoData.getPlatforms().get(partyId);
+        String tokenC = httpRequest(endpoint.getUrl(), "POST", platformInfo1.getToken(), emspCredentials);
         platformInfo1.setToken(tokenC);
     }
 
     @SneakyThrows
     public void retrieveClientInfo(Credentials credentials, CiString partyId) {
-            String response = httpRequest(credentials.getUrl(), "GET", credentials.getToken());
+            String response = httpRequest(credentials.getUrl(), "GET", this.credentialsTokenService.decodeToken(credentials.getToken()));
             ObjectMapper objectMapper = new ObjectMapper();
             List<Version> versions = objectMapper.readValue(response, new TypeReference<List<Version>>() {});
             Optional<Version> compatibleVersionOpt = versions.stream()
@@ -101,11 +102,11 @@ public class CredentialsService {
                     .findFirst();
             if(compatibleVersionOpt.isPresent()) {
                 Version compatibleVersion = compatibleVersionOpt.get();
-                response = httpRequest(compatibleVersion.getUrl(), "GET", credentials.getToken());
+                response = httpRequest(compatibleVersion.getUrl(), "GET", this.credentialsTokenService.decodeToken(credentials.getToken()));
                 List<VersionDetails> versionDetails = objectMapper.readValue(response, new TypeReference<List<VersionDetails>>() {});
-                PlatformInfo platformInfo = platforms.get(partyId);
+                PlatformInfo platformInfo = this.cpoData.getPlatforms().get(partyId);
                 platformInfo.setVersions(versionDetails);
-                platforms.put(partyId, platformInfo);
+                this.cpoData.getPlatforms().put(partyId, platformInfo);
             }
     }
 
@@ -114,7 +115,7 @@ public class CredentialsService {
         System.out.println("Sending " + method + " request to: " + url);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(method);
-        connection.setRequestProperty("Authorization", "Bearer " + token);
+        connection.setRequestProperty("Authorization", "Token " + credentialsTokenService.encodeToken(token));
         int responseCode = connection.getResponseCode();
         StringBuilder sb = new StringBuilder();
         if(responseCode == HttpsURLConnection.HTTP_OK) {
@@ -125,12 +126,13 @@ public class CredentialsService {
         }
         return String.valueOf(sb);
     }
+
     @SneakyThrows
     public String httpRequest(URL url, String method, String token, Credentials credentials) {
         System.out.println("Sending " + method + " request to: " + url);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(method);
-        connection.setRequestProperty("Authorization", "Bearer " + token);
+        connection.setRequestProperty("Authorization", "Token " + credentialsTokenService.encodeToken(token));
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setDoOutput(true);
         ObjectMapper om = new ObjectMapper();

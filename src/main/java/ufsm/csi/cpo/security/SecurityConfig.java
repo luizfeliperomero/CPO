@@ -15,6 +15,9 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFilter;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import ufsm.csi.cpo.modules.credentials.CredentialsTokenService;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
@@ -26,15 +29,27 @@ public class SecurityConfig {
     private RSAPublicKey publicKey;
     @Value("${jwt.private.key}")
     private RSAPrivateKey privateKey;
+    private final CredentialsTokenService credentialsTokenService;
+
+    public SecurityConfig(CredentialsTokenService credentialsTokenService) {
+        this.credentialsTokenService = credentialsTokenService;
+    }
+
+    @Bean
+    public CredentialsTokenAuthFilter credentialsTokenAuthFilter() {
+        return new CredentialsTokenAuthFilter(credentialsTokenService);
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(registry -> {
-                    registry.requestMatchers("/ocpi/cpo/credentials/get_token").permitAll();
-                    registry.anyRequest().authenticated();
-        })
-                .oauth2ResourceServer(config -> config.jwt(Customizer.withDefaults()))
+                /*.authorizeHttpRequests(registry -> {
+                    registry.requestMatchers("/2.2.1/credentials/get_token").permitAll();
+                    //registry.anyRequest().authenticated();
+        })*/
+                //.oauth2ResourceServer(config -> config.jwt(Customizer.withDefaults()))
+                .addFilterBefore(credentialsTokenAuthFilter(), BasicAuthenticationFilter.class)
                 .build();
     }
 

@@ -4,28 +4,27 @@ import lombok.SneakyThrows;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ufsm.csi.cpo.modules.types.CiString;
-import ufsm.csi.cpo.modules.types.Role;
+import ufsm.csi.cpo.data.CpoData;
 import ufsm.csi.cpo.security.JwtService;
-
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/2.2.1/credentials")
 public class CredentialsController {
-    private final JwtService jwtService;
+    private final CredentialsTokenService credentialsTokenService;
     private final CredentialsService credentialsService;
+    private final CpoData cpoData;
 
-    public CredentialsController(JwtService jwtService, CredentialsService credentialsService) {
-        this.jwtService = jwtService;
+    public CredentialsController(JwtService jwtService, CredentialsTokenService credentialsTokenService, CredentialsService credentialsService) {
+        this.credentialsTokenService = credentialsTokenService;
         this.credentialsService = credentialsService;
+        this.cpoData = CpoData.getInstance();
     }
 
     @GetMapping("/get_token")
     public ResponseEntity<String> getToken() {
-        return ResponseEntity.ok(this.jwtService.generateToken());
+        String token = this.credentialsTokenService.generateToken();
+        this.cpoData.getValidCredentialsTokens().add(token);
+        return ResponseEntity.ok(this.credentialsTokenService.encodeToken(token));
     }
 
     @SneakyThrows
