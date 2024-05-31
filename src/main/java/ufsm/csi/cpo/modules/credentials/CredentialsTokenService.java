@@ -30,4 +30,12 @@ public class CredentialsTokenService {
         return this.cpoData.getValidCredentialsTokens().stream()
                 .anyMatch(ct -> ct.equals(token));
     }
+
+    public boolean validateToken(String token) {
+        return this.cpoData.getValidCredentialsTokens().add(token);
+    }
+
+    public boolean invalidateToken(String token) {
+       return this.cpoData.getValidCredentialsTokens().remove(token);
+    }
 }

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ufsm.csi.cpo.serialization.VersionNumberDeserializer;
 import ufsm.csi.cpo.serialization.VersionNumberSerializer;
 
+import java.util.*;
+
 @JsonSerialize(using = VersionNumberSerializer.class)
 @JsonDeserialize(using = VersionNumberDeserializer.class)
 public enum VersionNumber {
@@ -31,6 +33,36 @@ public enum VersionNumber {
             default:
                 return super.toString();
         }
+    }
+
+    public static VersionNumber min() {
+       return VersionNumber.V2_0;
+    }
+
+    public static VersionNumber max() {
+        return VersionNumber.V2_2_1;
+    }
+
+    public static boolean isGreater(VersionNumber lhs, VersionNumber rhs) {
+        String lhsStr = lhs.toString();
+        String rhsStr = rhs.toString();
+        List<String> lhsStrSplitedByComma = Arrays.asList(lhsStr.split("\\."));
+        List<String> rhsStrSplitedByComma = Arrays.asList(rhsStr.split("\\."));
+        Deque<Integer> deque = new ArrayDeque<>();
+        for(String str : lhsStrSplitedByComma) {
+            int lhsValue = Integer.parseInt(str);
+            deque.addLast(lhsValue);
+        }
+        for(String str : rhsStrSplitedByComma) {
+            int rhsValue = Integer.parseInt(str);
+            if(rhsValue > deque.peek()) {
+                return false;
+            } else if(rhsValue < deque.peek()){
+                return true;
+            }
+            deque.pop();
+        }
+        return !deque.isEmpty();
     }
 
 }

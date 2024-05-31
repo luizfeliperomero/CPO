@@ -12,18 +12,17 @@ import ufsm.csi.cpo.security.JwtService;
 public class CredentialsController {
     private final CredentialsTokenService credentialsTokenService;
     private final CredentialsService credentialsService;
-    private final CpoData cpoData;
 
     public CredentialsController(JwtService jwtService, CredentialsTokenService credentialsTokenService, CredentialsService credentialsService) {
         this.credentialsTokenService = credentialsTokenService;
         this.credentialsService = credentialsService;
-        this.cpoData = CpoData.getInstance();
     }
 
     @GetMapping("/get_token")
     public ResponseEntity<String> getToken() {
         String token = this.credentialsTokenService.generateToken();
-        this.cpoData.getValidCredentialsTokens().add(token);
+        this.credentialsTokenService.validateToken(token);
+        this.credentialsService.setTokenA(token);
         return ResponseEntity.ok(this.credentialsTokenService.encodeToken(token));
     }
 

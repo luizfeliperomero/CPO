@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ufsm.csi.cpo.data.CpoData;
 
 import java.net.MalformedURLException;
 import java.util.Arrays;
@@ -14,30 +15,21 @@ import java.net.URL;
 @RestController
 @RequestMapping("ocpi/cpo/versions")
 public class VersionController {
-    List<Version> versions = Arrays.asList(new Version(VersionNumber.V2_2_1, new URL("http://localhost:8080/ocpi/cpo/versions/2.2.1/details")));
+    private final CpoData cpoData;
 
-    public VersionController() throws MalformedURLException {
+    public VersionController() {
+        this.cpoData = CpoData.getInstance();
     }
 
     @GetMapping()
     public ResponseEntity<List<Version>> getVersions(){
-        return ResponseEntity.ok(versions);
+        return ResponseEntity.ok(this.cpoData.getVersions());
     }
 
     @GetMapping("/2.2.1/details")
     @SneakyThrows
     public ResponseEntity<List<VersionDetails>> getVersionsDetails() {
-        List<Endpoint> endpoints = Arrays.asList(
-        new Endpoint(ModuleID.credentials,
-                InterfaceRole.SENDER,
-                new URL("http://localhost:8080/2.2.1/credentials/sender")),
-        new Endpoint(ModuleID.credentials,
-                InterfaceRole.RECEIVER,
-                new URL("http://localhost:8080/2.2.1/credentials/receiver")));
-
-        List<VersionDetails> versionDetails = Arrays.asList(new VersionDetails(VersionNumber.V2_2_1, endpoints));
-
-        return ResponseEntity.ok(versionDetails);
+        return ResponseEntity.ok(this.cpoData.getVersionDetails());
     }
 
 }
