@@ -37,4 +37,9 @@ public class CiString {
         CiString that = (CiString ) obj;
         return value.equalsIgnoreCase(that.value);
     }
+
+    @Override
+    public int hashCode() {
+        return this.value.toLowerCase().hashCode();
+    }
 }
