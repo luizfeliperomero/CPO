@@ -67,7 +67,8 @@ public class CredentialsService {
         System.out.println(this.cpoData.getPlatforms().get(partyId));
     }
 
-    public String exchangeCredentialsAsReceiver(Credentials credentials) {
+    @SneakyThrows
+    public Credentials exchangeCredentialsAsReceiver(Credentials credentials) {
         CiString partyId = credentials.getRoles().get(0).getPartyId();
         Optional<Endpoint> credentialsEndpoint = getCredentialsEndpoint(credentials, InterfaceRole.SENDER);
         String tokenC = "";
@@ -77,7 +78,17 @@ public class CredentialsService {
            this.credentialsTokenService.invalidateToken(this.tokenA);
         }
         System.out.println(this.cpoData.getPlatforms().get(partyId));
-        return tokenC;
+        CredentialsRole credentialsRole = CredentialsRole.builder()
+                .role(Role.CPO)
+                .partyId(this.cpoData.getPartyId())
+                .countryCode(this.cpoData.getCountryCode())
+                .build();
+        Credentials cpoCredentials = Credentials.builder()
+                .url(new URL("http://localhost:8080/ocpi/cpo/versions"))
+                .token(this.credentialsTokenService.encodeToken(tokenC))
+                .roles(Arrays.asList(credentialsRole))
+                .build();
+        return cpoCredentials;
     }
 
     @SneakyThrows
@@ -93,7 +104,9 @@ public class CredentialsService {
                 .roles(Arrays.asList(credentialsRole))
                 .build();
         PlatformInfo platformInfo1 = this.cpoData.getPlatforms().get(partyId);
-        String tokenC = httpRequest(endpoint.getUrl(), "POST", platformInfo1.getToken(), emspCredentials);
+        ObjectMapper objectMapper = new ObjectMapper();
+        Credentials cpoCredentials = objectMapper.readValue(httpRequest(endpoint.getUrl(), "POST", platformInfo1.getToken(), emspCredentials), Credentials.class);
+        String tokenC = cpoCredentials.getToken();
         platformInfo1.setToken(tokenC);
     }
 

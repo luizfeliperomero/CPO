@@ -35,7 +35,7 @@ public class CredentialsController {
 
     @SneakyThrows
     @PostMapping("/receiver")
-    public ResponseEntity<String> exchangeCredentialsReceiver(@RequestBody Credentials credentials) {
+    public ResponseEntity<Credentials> exchangeCredentialsReceiver(@RequestBody Credentials credentials) {
         return ResponseEntity.ok(this.credentialsService.exchangeCredentialsAsReceiver(credentials));
     }
 }
