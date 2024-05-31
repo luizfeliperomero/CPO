@@ -1,11 +1,14 @@
 package ufsm.csi.cpo.modules.credentials;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import ufsm.csi.cpo.data.CpoData;
+import ufsm.csi.cpo.exceptions.NoMutualVersion;
+import ufsm.csi.cpo.exceptions.PlatformAlreadyRegistered;
 import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.modules.types.Role;
 import ufsm.csi.cpo.modules.versions.*;
@@ -14,6 +17,7 @@ import javax.net.ssl.HttpsURLConnection;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -30,7 +34,7 @@ public class CredentialsService {
         cpoData = CpoData.getInstance();
     }
 
-    public Optional<Endpoint> getCredentialsEndpoint(Credentials credentials, InterfaceRole otherPlatformRole) {
+    public Optional<Endpoint> getCredentialsEndpoint(Credentials credentials, InterfaceRole otherPlatformRole) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
         CiString partyId = credentials.getRoles().get(0).getPartyId();
         Optional<Endpoint> endpointOpt = Optional.empty();
         if(!this.cpoData.getPlatforms().containsKey(partyId)) {
@@ -51,11 +55,11 @@ public class CredentialsService {
                         .filter(e -> e.getIdentifier().equals(ModuleID.credentials) && e.getRole().equals(otherPlatformRole))
                         .findFirst();
             }
-        }
+        } else throw new PlatformAlreadyRegistered("Platform of party id: " +partyId + " has already been registered");
         return endpointOpt;
     }
 
-    public Credentials exchangeCredentialsAsSender(Credentials credentials) {
+    public Credentials exchangeCredentialsAsSender(Credentials credentials) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
         CiString partyId = credentials.getRoles().get(0).getPartyId();
         Optional<Endpoint> credentialsEndpointOpt = getCredentialsEndpoint(credentials, InterfaceRole.RECEIVER);
         Credentials finalCredentials = null;
@@ -69,8 +73,7 @@ public class CredentialsService {
         return finalCredentials;
     }
 
-    @SneakyThrows
-    public Credentials exchangeCredentialsAsReceiver(Credentials credentials) {
+    public Credentials exchangeCredentialsAsReceiver(Credentials credentials) throws PlatformAlreadyRegistered, MalformedURLException, NoMutualVersion, JsonProcessingException {
         CiString partyId = credentials.getRoles().get(0).getPartyId();
         Optional<Endpoint> credentialsEndpoint = getCredentialsEndpoint(credentials, InterfaceRole.SENDER);
         String tokenC = "";
@@ -86,7 +89,7 @@ public class CredentialsService {
                 .countryCode(this.cpoData.getCountryCode())
                 .build();
         Credentials cpoCredentials = Credentials.builder()
-                .url(new URL("http://localhost:8080/ocpi/cpo/versions"))
+                .url(new URL(this.cpoData.getServerUrl() + "/ocpi/cpo/versions"))
                 .token(this.credentialsTokenService.encodeToken(tokenC))
                 .roles(Arrays.asList(credentialsRole))
                 .build();
@@ -101,7 +104,7 @@ public class CredentialsService {
                 .countryCode(this.cpoData.getCountryCode())
                 .build();
         Credentials emspCredentials = Credentials.builder()
-                .url(new URL("http://localhost:8080/ocpi/cpo/versions"))
+                .url(new URL(this.cpoData.getServerUrl() + "/ocpi/cpo/versions"))
                 .token(this.credentialsTokenService.encodeToken(tokenB))
                 .roles(Arrays.asList(credentialsRole))
                 .build();
@@ -113,16 +116,19 @@ public class CredentialsService {
         return emspCredentials;
     }
 
-    public Optional<VersionNumber> pickLatestMutualVersion(List<Version> lhs, List<Version> rhs) {
+    public Optional<VersionNumber> pickLatestMutualVersion(List<Version> lhs, List<Version> rhs) throws NoMutualVersion {
         List<VersionNumber> mutualVersions = new ArrayList<>();
         lhs.forEach(vlhs -> {
-            rhs.forEach(vrhs  -> {
-                if(vlhs.getVersion().equals(vrhs.getVersion())) {
+            rhs.forEach(vrhs -> {
+                if (vlhs.getVersion().equals(vrhs.getVersion())) {
                     mutualVersions.add(vlhs.getVersion());
                 }
             });
         });
-        return mutualVersions.isEmpty() ? Optional.empty() : Optional.of(getLatestVersion(mutualVersions));
+
+        if (!mutualVersions.isEmpty()) {
+            return Optional.of(getLatestVersion(mutualVersions));
+        } else throw new NoMutualVersion("No mutual version to establish communication");
     }
 
     public VersionNumber getLatestVersion(List<VersionNumber> versions) {
@@ -142,8 +148,7 @@ public class CredentialsService {
 
 
 
-    @SneakyThrows
-    public void retrieveClientInfo(Credentials credentials, CiString partyId) {
+    public void retrieveClientInfo(Credentials credentials, CiString partyId) throws NoMutualVersion, JsonProcessingException {
             String response = httpRequest(credentials.getUrl(), "GET", this.credentialsTokenService.decodeToken(credentials.getToken()));
             ObjectMapper objectMapper = new ObjectMapper();
             List<Version> versions = objectMapper.readValue(response, new TypeReference<List<Version>>() {});

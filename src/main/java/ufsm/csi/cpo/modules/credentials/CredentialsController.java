@@ -1,10 +1,13 @@
 package ufsm.csi.cpo.modules.credentials;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.SneakyThrows;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ufsm.csi.cpo.data.CpoData;
+import ufsm.csi.cpo.exceptions.NoMutualVersion;
+import ufsm.csi.cpo.exceptions.PlatformAlreadyRegistered;
 import ufsm.csi.cpo.security.JwtService;
 
 @RestController
@@ -28,13 +31,13 @@ public class CredentialsController {
 
     @SneakyThrows
     @PostMapping("/sender")
-    public ResponseEntity<Credentials> exchangeCredentialsSender(@RequestBody Credentials credentials) {
-        return ResponseEntity.ok(this.credentialsService.exchangeCredentialsAsSender(credentials));
+    public Credentials exchangeCredentialsSender(@RequestBody Credentials credentials) {
+        return this.credentialsService.exchangeCredentialsAsSender(credentials);
     }
 
     @SneakyThrows
     @PostMapping("/receiver")
-    public ResponseEntity<Credentials> exchangeCredentialsReceiver(@RequestBody Credentials credentials) {
-        return ResponseEntity.ok(this.credentialsService.exchangeCredentialsAsReceiver(credentials));
+    public Credentials exchangeCredentialsReceiver(@RequestBody Credentials credentials) {
+        return this.credentialsService.exchangeCredentialsAsReceiver(credentials);
     }
 }
