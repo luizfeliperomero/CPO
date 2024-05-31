@@ -55,16 +55,18 @@ public class CredentialsService {
         return endpointOpt;
     }
 
-    public void exchangeCredentialsAsSender(Credentials credentials) {
+    public Credentials exchangeCredentialsAsSender(Credentials credentials) {
         CiString partyId = credentials.getRoles().get(0).getPartyId();
         Optional<Endpoint> credentialsEndpointOpt = getCredentialsEndpoint(credentials, InterfaceRole.RECEIVER);
+        Credentials finalCredentials = null;
         if(credentialsEndpointOpt.isPresent()) {
             Endpoint credentialsEndpoint = credentialsEndpointOpt.get();
             String tokenB = credentialsTokenService.generateToken();
             this.credentialsTokenService.validateToken(tokenB);
-            senderLogic(credentialsEndpoint, tokenB, partyId);
+            finalCredentials = senderLogic(credentialsEndpoint, tokenB, partyId);
         }
         System.out.println(this.cpoData.getPlatforms().get(partyId));
+        return finalCredentials;
     }
 
     @SneakyThrows
@@ -92,7 +94,7 @@ public class CredentialsService {
     }
 
     @SneakyThrows
-    public void senderLogic(Endpoint endpoint, String tokenB, CiString partyId) {
+    public Credentials senderLogic(Endpoint endpoint, String tokenB, CiString partyId) {
         CredentialsRole credentialsRole = CredentialsRole.builder()
                 .role(Role.CPO)
                 .partyId(this.cpoData.getPartyId())
@@ -108,6 +110,7 @@ public class CredentialsService {
         Credentials cpoCredentials = objectMapper.readValue(httpRequest(endpoint.getUrl(), "POST", platformInfo1.getToken(), emspCredentials), Credentials.class);
         String tokenC = cpoCredentials.getToken();
         platformInfo1.setToken(tokenC);
+        return emspCredentials;
     }
 
     public Optional<VersionNumber> pickLatestMutualVersion(List<Version> lhs, List<Version> rhs) {

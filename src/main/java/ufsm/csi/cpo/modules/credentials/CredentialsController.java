@@ -28,9 +28,8 @@ public class CredentialsController {
 
     @SneakyThrows
     @PostMapping("/sender")
-    public ResponseEntity<HttpStatus> exchangeCredentialsSender(@RequestBody Credentials credentials) {
-        this.credentialsService.exchangeCredentialsAsSender(credentials);
-        return ResponseEntity.ok(HttpStatus.OK);
+    public ResponseEntity<Credentials> exchangeCredentialsSender(@RequestBody Credentials credentials) {
+        return ResponseEntity.ok(this.credentialsService.exchangeCredentialsAsSender(credentials));
     }
 
     @SneakyThrows
