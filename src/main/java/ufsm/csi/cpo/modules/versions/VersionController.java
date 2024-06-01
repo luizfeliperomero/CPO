@@ -5,31 +5,28 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ufsm.csi.cpo.data.CpoData;
+import ufsm.csi.cpo.data.PlatformData;
 
-import java.net.MalformedURLException;
-import java.util.Arrays;
 import java.util.List;
-import java.net.URL;
 
 @RestController
 @RequestMapping("ocpi/cpo/versions")
 public class VersionController {
-    private final CpoData cpoData;
+    private final PlatformData platformData;
 
     public VersionController() {
-        this.cpoData = CpoData.getInstance();
+        this.platformData = PlatformData.getInstance();
     }
 
     @GetMapping()
     public ResponseEntity<List<Version>> getVersions(){
-        return ResponseEntity.ok(this.cpoData.getVersions());
+        return ResponseEntity.ok(this.platformData.getVersions());
     }
 
     @GetMapping("/2.2.1/details")
     @SneakyThrows
     public ResponseEntity<List<VersionDetails>> getVersionsDetails() {
-        return ResponseEntity.ok(this.cpoData.getVersionDetails());
+        return ResponseEntity.ok(this.platformData.getVersionDetails());
     }
 
 }

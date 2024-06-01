@@ -2,19 +2,15 @@ package ufsm.csi.cpo.data;
 
 import lombok.Data;
 import lombok.SneakyThrows;
-import lombok.Value;
-import org.springframework.stereotype.Service;
-import ufsm.csi.cpo.modules.credentials.Credentials;
 import ufsm.csi.cpo.modules.credentials.PlatformInfo;
-import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.modules.versions.*;
 
 import java.net.URL;
 import java.util.*;
 
 @Data
-public class CpoData {
-    private static CpoData instance;
+public class PlatformData {
+    private static PlatformData instance;
     private Map<String, PlatformInfo> platforms = new HashMap<>();
     private List<String> validCredentialsTokens = new ArrayList<>();
     private final List<Version> versions;
@@ -22,7 +18,7 @@ public class CpoData {
     private final String serverUrl;
 
     @SneakyThrows
-    private CpoData() {
+    private PlatformData() {
        this.versions = Arrays.asList(new Version(VersionNumber.V2_2_1, new URL("http://localhost:8080/ocpi/cpo/versions/2.2.1/details")));
        this.serverUrl = "http://localhost:8080";
         List<Endpoint> endpoints = Arrays.asList(
@@ -35,10 +31,10 @@ public class CpoData {
         this.versionDetails = Arrays.asList(new VersionDetails(VersionNumber.V2_2_1, endpoints));
     }
 
-    public static CpoData getInstance() {
-        synchronized (CpoData.class) {
+    public static PlatformData getInstance() {
+        synchronized (PlatformData.class) {
             if(instance == null) {
-                instance = new CpoData();
+                instance = new PlatformData();
             }
         }
         return instance;

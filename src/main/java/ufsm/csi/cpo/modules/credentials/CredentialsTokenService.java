@@ -1,18 +1,17 @@
 package ufsm.csi.cpo.modules.credentials;
 
 import org.springframework.stereotype.Service;
-import ufsm.csi.cpo.data.CpoData;
+import ufsm.csi.cpo.data.PlatformData;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.UUID;
 
 @Service
 public class CredentialsTokenService {
-    private final CpoData cpoData;
+    private final PlatformData platformData;
 
     public CredentialsTokenService() {
-        this.cpoData = CpoData.getInstance();
+        this.platformData = PlatformData.getInstance();
     }
 
     public String generateToken() {
@@ -31,15 +30,15 @@ public class CredentialsTokenService {
     }
 
     public boolean isTokenValid(String token) {
-        return this.cpoData.getValidCredentialsTokens().stream()
+        return this.platformData.getValidCredentialsTokens().stream()
                 .anyMatch(ct -> ct.equals(token));
     }
 
     public boolean validateToken(String token) {
-        return this.cpoData.getValidCredentialsTokens().add(token);
+        return this.platformData.getValidCredentialsTokens().add(token);
     }
 
     public boolean invalidateToken(String token) {
-       return this.cpoData.getValidCredentialsTokens().remove(token);
+       return this.platformData.getValidCredentialsTokens().remove(token);
     }
 }

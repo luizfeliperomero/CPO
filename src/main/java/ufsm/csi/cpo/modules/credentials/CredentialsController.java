@@ -1,14 +1,8 @@
 package ufsm.csi.cpo.modules.credentials;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.SneakyThrows;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ufsm.csi.cpo.data.CpoData;
-import ufsm.csi.cpo.exceptions.NoMutualVersion;
-import ufsm.csi.cpo.exceptions.PlatformAlreadyRegistered;
-import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.security.JwtService;
 
 @RestController
@@ -30,7 +24,7 @@ public class CredentialsController {
 
     @GetMapping("/get_token")
     public ResponseEntity<String> getToken() {
-        String token = this.credentialsTokenService.generateToken();
+        var token = this.credentialsTokenService.generateToken();
         this.credentialsTokenService.validateToken(token);
         this.credentialsService.setTokenA(token);
         return ResponseEntity.ok(this.credentialsTokenService.encodeToken(token));
