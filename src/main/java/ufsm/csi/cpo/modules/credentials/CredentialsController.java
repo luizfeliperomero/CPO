@@ -38,13 +38,13 @@ public class CredentialsController {
 
     @SneakyThrows
     @PostMapping("/sender")
-    public Credentials exchangeCredentialsSender(@RequestBody Credentials credentials) {
-        return this.credentialsService.exchangeCredentialsAsSender(credentials);
+    public Credentials registerAsSender(@RequestBody Credentials credentials) {
+        return this.credentialsService.registerAsSender(credentials);
     }
 
     @SneakyThrows
     @PostMapping("/receiver")
-    public Credentials exchangeCredentialsReceiver(@RequestBody Credentials credentials) {
-        return this.credentialsService.exchangeCredentialsAsReceiver(credentials);
+    public Credentials registerAsReceiver(@RequestBody Credentials credentials) {
+        return this.credentialsService.registerAsReceiver(credentials);
     }
 }

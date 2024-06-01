@@ -63,7 +63,7 @@ public class CredentialsService {
         } else throw new PlatformAlreadyRegistered("Platform of party id: " +partyId + " has already been registered");
     }
 
-    public Credentials exchangeCredentialsAsSender(Credentials credentials) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
+    public Credentials registerAsSender(Credentials credentials) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
         CiString partyId = credentials.getRoles().get(0).getPartyId();
         Optional<Endpoint> credentialsEndpointOpt = getCredentialsEndpoint(credentials, InterfaceRole.RECEIVER);
         Credentials finalCredentials = null;
@@ -78,7 +78,7 @@ public class CredentialsService {
         return finalCredentials;
     }
 
-    public Credentials exchangeCredentialsAsReceiver(Credentials credentials) throws PlatformAlreadyRegistered, MalformedURLException, NoMutualVersion, JsonProcessingException {
+    public Credentials registerAsReceiver(Credentials credentials) throws PlatformAlreadyRegistered, MalformedURLException, NoMutualVersion, JsonProcessingException {
         CiString partyId = credentials.getRoles().get(0).getPartyId();
         Optional<Endpoint> credentialsEndpoint = getCredentialsEndpoint(credentials, InterfaceRole.SENDER);
         String tokenC = "";
