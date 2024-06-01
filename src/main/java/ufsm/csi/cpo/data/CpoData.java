@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.Value;
 import org.springframework.stereotype.Service;
+import ufsm.csi.cpo.modules.credentials.Credentials;
 import ufsm.csi.cpo.modules.credentials.PlatformInfo;
 import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.modules.versions.*;

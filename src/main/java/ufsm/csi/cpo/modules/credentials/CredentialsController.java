@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import ufsm.csi.cpo.data.CpoData;
 import ufsm.csi.cpo.exceptions.NoMutualVersion;
 import ufsm.csi.cpo.exceptions.PlatformAlreadyRegistered;
+import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.security.JwtService;
 
 @RestController
@@ -19,6 +20,12 @@ public class CredentialsController {
     public CredentialsController(JwtService jwtService, CredentialsTokenService credentialsTokenService, CredentialsService credentialsService) {
         this.credentialsTokenService = credentialsTokenService;
         this.credentialsService = credentialsService;
+    }
+
+    @SneakyThrows
+    @GetMapping("/{partyId}")
+    public Credentials getCredentials(@PathVariable String partyId) {
+       return this.credentialsService.getCredentials(new CiString(partyId));
     }
 
     @GetMapping("/get_token")

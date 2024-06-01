@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import ufsm.csi.cpo.data.CpoData;
 import ufsm.csi.cpo.exceptions.NoMutualVersion;
 import ufsm.csi.cpo.exceptions.PlatformAlreadyRegistered;
+import ufsm.csi.cpo.exceptions.PlatformNotRegistered;
 import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.modules.types.Role;
 import ufsm.csi.cpo.modules.versions.*;
@@ -34,29 +35,32 @@ public class CredentialsService {
         cpoData = CpoData.getInstance();
     }
 
+    public Credentials getCredentials(CiString partyId) throws PlatformNotRegistered {
+        if(this.cpoData.getPlatforms().containsKey(partyId)) {
+            return this.cpoData.getPlatforms().get(partyId).getCredentialsUsed();
+        }
+        throw new PlatformNotRegistered("The platform of party id \"" + partyId.getValue() + "\" can't access the server credentials object because it's not registered to the server's system");
+    }
+
     public Optional<Endpoint> getCredentialsEndpoint(Credentials credentials, InterfaceRole otherPlatformRole) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
         CiString partyId = credentials.getRoles().get(0).getPartyId();
-        Optional<Endpoint> endpointOpt = Optional.empty();
         if(!this.cpoData.getPlatforms().containsKey(partyId)) {
             PlatformInfo platformInfo = PlatformInfo.builder()
                     .token(this.credentialsTokenService.decodeToken(credentials.getToken()))
                     .build();
             this.cpoData.getPlatforms().put(partyId, platformInfo);
             retrieveClientInfo(credentials, partyId);
-            PlatformInfo updatedPI = this.cpoData.getPlatforms().get(partyId);
-            Optional<VersionDetails> versionDetailsOpt = updatedPI.getVersions()
+            final PlatformInfo updatedPI = this.cpoData.getPlatforms().get(partyId);
+            return updatedPI.getVersions()
                     .stream()
                     .filter(v -> v.getVersion().equals(updatedPI.getCurrentVersion()))
-                    .findFirst();
-            if(versionDetailsOpt.isPresent()) {
-                VersionDetails versionDetails = versionDetailsOpt.get();
-                endpointOpt = versionDetails.getEndpoints()
-                        .stream()
-                        .filter(e -> e.getIdentifier().equals(ModuleID.credentials) && e.getRole().equals(otherPlatformRole))
-                        .findFirst();
-            }
+                    .findFirst()
+                    .flatMap(vd -> vd.getEndpoints().stream()
+                            .filter(e -> e.getIdentifier().equals(ModuleID.credentials) && e.getRole().equals(otherPlatformRole))
+                            .findFirst()
+                    );
+
         } else throw new PlatformAlreadyRegistered("Platform of party id: " +partyId + " has already been registered");
-        return endpointOpt;
     }
 
     public Credentials exchangeCredentialsAsSender(Credentials credentials) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
@@ -70,6 +74,7 @@ public class CredentialsService {
             finalCredentials = senderLogic(credentialsEndpoint, tokenB, partyId);
         }
         System.out.println(this.cpoData.getPlatforms().get(partyId));
+        this.cpoData.getPlatforms().get(partyId).setCredentialsUsed(finalCredentials);
         return finalCredentials;
     }
 
@@ -83,16 +88,17 @@ public class CredentialsService {
            this.credentialsTokenService.invalidateToken(this.tokenA);
         }
         System.out.println(this.cpoData.getPlatforms().get(partyId));
-        CredentialsRole credentialsRole = CredentialsRole.builder()
+        var credentialsRole = CredentialsRole.builder()
                 .role(Role.CPO)
                 .partyId(this.cpoData.getPartyId())
                 .countryCode(this.cpoData.getCountryCode())
                 .build();
-        Credentials cpoCredentials = Credentials.builder()
+        var cpoCredentials = Credentials.builder()
                 .url(new URL(this.cpoData.getServerUrl() + "/ocpi/cpo/versions"))
                 .token(this.credentialsTokenService.encodeToken(tokenC))
                 .roles(Arrays.asList(credentialsRole))
                 .build();
+        this.cpoData.getPlatforms().get(partyId).setCredentialsUsed(cpoCredentials);
         return cpoCredentials;
     }
 

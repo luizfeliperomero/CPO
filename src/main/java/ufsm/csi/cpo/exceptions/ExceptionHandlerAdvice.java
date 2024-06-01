@@ -22,4 +22,9 @@ public class ExceptionHandlerAdvice {
     public ResponseEntity<String> platformAlreadyRegistered(JsonProcessingException e) {
         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(PlatformNotRegistered.class)
+    public ResponseEntity<String> platformNotRegistered(PlatformNotRegistered e) {
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.PRECONDITION_FAILED);
+    }
 }
