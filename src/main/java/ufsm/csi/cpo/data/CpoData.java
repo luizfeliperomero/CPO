@@ -15,19 +15,15 @@ import java.util.*;
 @Data
 public class CpoData {
     private static CpoData instance;
-    private Map<CiString, PlatformInfo> platforms = new HashMap<>();
+    private Map<String, PlatformInfo> platforms = new HashMap<>();
     private List<String> validCredentialsTokens = new ArrayList<>();
     private final List<Version> versions;
     private final List<VersionDetails> versionDetails ;
-    private final CiString partyId;
-    private final CiString countryCode;
     private final String serverUrl;
 
     @SneakyThrows
     private CpoData() {
        this.versions = Arrays.asList(new Version(VersionNumber.V2_2_1, new URL("http://localhost:8080/ocpi/cpo/versions/2.2.1/details")));
-       this.partyId = new CiString("PSI");
-       this.countryCode = new CiString("BR");
        this.serverUrl = "http://localhost:8080";
         List<Endpoint> endpoints = Arrays.asList(
                 new Endpoint(ModuleID.credentials,

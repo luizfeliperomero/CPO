@@ -23,9 +23,9 @@ public class CredentialsController {
     }
 
     @SneakyThrows
-    @GetMapping("/{partyId}")
-    public Credentials getCredentials(@PathVariable String partyId) {
-       return this.credentialsService.getCredentials(new CiString(partyId));
+    @GetMapping()
+    public Credentials getCredentials(@RequestHeader(value = "Authorization") String token) {
+       return this.credentialsService.getCredentials(this.credentialsTokenService.getTokenFromAuthorizationHeader(token));
     }
 
     @GetMapping("/get_token")
@@ -38,13 +38,20 @@ public class CredentialsController {
 
     @SneakyThrows
     @PostMapping("/sender")
-    public Credentials registerAsSender(@RequestBody Credentials credentials) {
-        return this.credentialsService.registerAsSender(credentials);
+    public Credentials registerAsSender(@RequestHeader(value = "Authorization") String token, @RequestBody Credentials credentials) {
+        return this.credentialsService.registerAsSender(credentials, this.credentialsTokenService.getTokenFromAuthorizationHeader(token));
     }
 
     @SneakyThrows
     @PostMapping("/receiver")
-    public Credentials registerAsReceiver(@RequestBody Credentials credentials) {
-        return this.credentialsService.registerAsReceiver(credentials);
+    public Credentials registerAsReceiver(@RequestHeader(value = "Authorization") String token, @RequestBody Credentials credentials) {
+        return this.credentialsService.registerAsReceiver(credentials, this.credentialsTokenService.getTokenFromAuthorizationHeader(token));
+    }
+
+    @SneakyThrows
+    @DeleteMapping
+    public ResponseEntity unregister(@RequestHeader(value = "Authorization") String token, Credentials credentials) {
+        this.credentialsService.unregisterPlatform(credentials, this.credentialsTokenService.getTokenFromAuthorizationHeader(token));
+        return ResponseEntity.ok("");
     }
 }

@@ -26,6 +26,10 @@ public class CredentialsTokenService {
         return new String(Base64.getDecoder().decode(token));
     }
 
+    public String getTokenFromAuthorizationHeader(String authorizationHeaderValue) {
+        return decodeToken(authorizationHeaderValue.substring(6));
+    }
+
     public boolean isTokenValid(String token) {
         return this.cpoData.getValidCredentialsTokens().stream()
                 .anyMatch(ct -> ct.equals(token));

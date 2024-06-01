@@ -35,22 +35,29 @@ public class CredentialsService {
         cpoData = CpoData.getInstance();
     }
 
-    public Credentials getCredentials(CiString partyId) throws PlatformNotRegistered {
-        if(this.cpoData.getPlatforms().containsKey(partyId)) {
-            return this.cpoData.getPlatforms().get(partyId).getCredentialsUsed();
+    public Credentials getCredentials(String token) throws PlatformNotRegistered {
+        if(this.cpoData.getPlatforms().containsKey(token)) {
+            return this.cpoData.getPlatforms().get(token).getCredentialsUsed();
         }
-        throw new PlatformNotRegistered("The platform of party id \"" + partyId.getValue() + "\" can't access the server credentials object because it's not registered to the server's system");
+        throw new PlatformNotRegistered();
     }
 
-    public Optional<Endpoint> getCredentialsEndpoint(Credentials credentials, InterfaceRole otherPlatformRole) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
-        CiString partyId = credentials.getRoles().get(0).getPartyId();
-        if(!this.cpoData.getPlatforms().containsKey(partyId)) {
+    public void unregisterPlatform(Credentials credentials, String token) throws PlatformNotRegistered {
+        var platforms = this.cpoData.getPlatforms();
+        if(this.cpoData.getPlatforms().containsKey(token)) {
+            platforms.remove(token);
+            this.cpoData.getValidCredentialsTokens().remove(this.credentialsTokenService.decodeToken(credentials.getToken()));
+        } else throw new PlatformNotRegistered();
+    }
+
+    public Optional<Endpoint> getCredentialsEndpoint(Credentials credentials, String token,InterfaceRole otherPlatformRole) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
+        if(!this.cpoData.getPlatforms().containsKey(token)) {
             PlatformInfo platformInfo = PlatformInfo.builder()
                     .token(this.credentialsTokenService.decodeToken(credentials.getToken()))
                     .build();
-            this.cpoData.getPlatforms().put(partyId, platformInfo);
-            retrieveClientInfo(credentials, partyId);
-            final PlatformInfo updatedPI = this.cpoData.getPlatforms().get(partyId);
+            this.cpoData.getPlatforms().put(token, platformInfo);
+            retrieveClientInfo(credentials, token);
+            final PlatformInfo updatedPI = this.cpoData.getPlatforms().get(token);
             return updatedPI.getVersions()
                     .stream()
                     .filter(v -> v.getVersion().equals(updatedPI.getCurrentVersion()))
@@ -60,61 +67,65 @@ public class CredentialsService {
                             .findFirst()
                     );
 
-        } else throw new PlatformAlreadyRegistered("Platform of party id: " +partyId + " has already been registered");
+        } else throw new PlatformAlreadyRegistered();
     }
 
-    public Credentials registerAsSender(Credentials credentials) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
-        CiString partyId = credentials.getRoles().get(0).getPartyId();
-        Optional<Endpoint> credentialsEndpointOpt = getCredentialsEndpoint(credentials, InterfaceRole.RECEIVER);
+    public Credentials registerAsSender(Credentials credentials, String token) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
+        Optional<Endpoint> credentialsEndpointOpt = getCredentialsEndpoint(credentials, token, InterfaceRole.RECEIVER);
         Credentials finalCredentials = null;
         if(credentialsEndpointOpt.isPresent()) {
+            var platform = this.cpoData.getPlatforms().get(token);
             Endpoint credentialsEndpoint = credentialsEndpointOpt.get();
             String tokenB = credentialsTokenService.generateToken();
             this.credentialsTokenService.validateToken(tokenB);
-            finalCredentials = senderLogic(credentialsEndpoint, tokenB, partyId);
+            this.cpoData.getPlatforms().remove(token);
+            this.cpoData.getPlatforms().put(tokenB, platform);
+            finalCredentials = senderLogic(credentialsEndpoint, tokenB, token);
         }
-        System.out.println(this.cpoData.getPlatforms().get(partyId));
-        this.cpoData.getPlatforms().get(partyId).setCredentialsUsed(finalCredentials);
+        System.out.println(this.cpoData.getPlatforms().get(token));
+        this.cpoData.getPlatforms().get(token).setCredentialsUsed(finalCredentials);
         return finalCredentials;
     }
 
-    public Credentials registerAsReceiver(Credentials credentials) throws PlatformAlreadyRegistered, MalformedURLException, NoMutualVersion, JsonProcessingException {
-        CiString partyId = credentials.getRoles().get(0).getPartyId();
-        Optional<Endpoint> credentialsEndpoint = getCredentialsEndpoint(credentials, InterfaceRole.SENDER);
+    public Credentials registerAsReceiver(Credentials credentials, String token) throws PlatformAlreadyRegistered, MalformedURLException, NoMutualVersion, JsonProcessingException {
+        Optional<Endpoint> credentialsEndpoint = getCredentialsEndpoint(credentials, token, InterfaceRole.SENDER);
         String tokenC = "";
+        var platform = this.cpoData.getPlatforms().get(token);
         if(credentialsEndpoint.isPresent()) {
            tokenC = credentialsTokenService.generateToken();
            this.credentialsTokenService.validateToken(tokenC);
+           this.cpoData.getPlatforms().remove(token);
+           this.cpoData.getPlatforms().put(tokenC, platform);
            this.credentialsTokenService.invalidateToken(this.tokenA);
         }
-        System.out.println(this.cpoData.getPlatforms().get(partyId));
+        System.out.println(this.cpoData.getPlatforms().get(tokenC));
         var credentialsRole = CredentialsRole.builder()
                 .role(Role.CPO)
-                .partyId(this.cpoData.getPartyId())
-                .countryCode(this.cpoData.getCountryCode())
+                .partyId(new CiString("PSI"))
+                .countryCode(new CiString("BR"))
                 .build();
         var cpoCredentials = Credentials.builder()
                 .url(new URL(this.cpoData.getServerUrl() + "/ocpi/cpo/versions"))
                 .token(this.credentialsTokenService.encodeToken(tokenC))
                 .roles(Arrays.asList(credentialsRole))
                 .build();
-        this.cpoData.getPlatforms().get(partyId).setCredentialsUsed(cpoCredentials);
+        platform.setCredentialsUsed(cpoCredentials);
         return cpoCredentials;
     }
 
     @SneakyThrows
-    public Credentials senderLogic(Endpoint endpoint, String tokenB, CiString partyId) {
+    public Credentials senderLogic(Endpoint endpoint, String tokenB, String token) {
         CredentialsRole credentialsRole = CredentialsRole.builder()
                 .role(Role.CPO)
-                .partyId(this.cpoData.getPartyId())
-                .countryCode(this.cpoData.getCountryCode())
+                .partyId(new CiString("PSI"))
+                .countryCode(new CiString("BR"))
                 .build();
         Credentials emspCredentials = Credentials.builder()
                 .url(new URL(this.cpoData.getServerUrl() + "/ocpi/cpo/versions"))
                 .token(this.credentialsTokenService.encodeToken(tokenB))
                 .roles(Arrays.asList(credentialsRole))
                 .build();
-        PlatformInfo platformInfo1 = this.cpoData.getPlatforms().get(partyId);
+        PlatformInfo platformInfo1 = this.cpoData.getPlatforms().get(token);
         ObjectMapper objectMapper = new ObjectMapper();
         Credentials cpoCredentials = objectMapper.readValue(httpRequest(endpoint.getUrl(), "POST", platformInfo1.getToken(), emspCredentials), Credentials.class);
         String tokenC = cpoCredentials.getToken();
@@ -152,9 +163,7 @@ public class CredentialsService {
     }
 
 
-
-
-    public void retrieveClientInfo(Credentials credentials, CiString partyId) throws NoMutualVersion, JsonProcessingException {
+    public void retrieveClientInfo(Credentials credentials, String token) throws NoMutualVersion, JsonProcessingException {
             String response = httpRequest(credentials.getUrl(), "GET", this.credentialsTokenService.decodeToken(credentials.getToken()));
             ObjectMapper objectMapper = new ObjectMapper();
             List<Version> versions = objectMapper.readValue(response, new TypeReference<List<Version>>() {});
@@ -169,10 +178,10 @@ public class CredentialsService {
                     response = httpRequest(compatibleVersion.getUrl(), "GET", this.credentialsTokenService.decodeToken(credentials.getToken()));
                     List<VersionDetails> versionDetails = objectMapper.readValue(response, new TypeReference<List<VersionDetails>>() {
                     });
-                    PlatformInfo platformInfo = this.cpoData.getPlatforms().get(partyId);
+                    PlatformInfo platformInfo = this.cpoData.getPlatforms().get(token);
                     platformInfo.setVersions(versionDetails);
                     platformInfo.setCurrentVersion(latestMutualVersionNumber);
-                    this.cpoData.getPlatforms().put(partyId, platformInfo);
+                    this.cpoData.getPlatforms().put(token, platformInfo);
                 }
             }
     }

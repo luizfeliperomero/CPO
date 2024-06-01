@@ -14,7 +14,7 @@ public class ExceptionHandlerAdvice {
     }
 
     @ExceptionHandler(NoMutualVersion.class)
-    public ResponseEntity<String> platformAlreadyRegistered(NoMutualVersion e) {
+    public ResponseEntity<String> noMutualVersion(NoMutualVersion e) {
         return new ResponseEntity<>(e.getMessage(), HttpStatus.PRECONDITION_FAILED);
     }
 
@@ -25,6 +25,6 @@ public class ExceptionHandlerAdvice {
 
     @ExceptionHandler(PlatformNotRegistered.class)
     public ResponseEntity<String> platformNotRegistered(PlatformNotRegistered e) {
-        return new ResponseEntity<>(e.getMessage(), HttpStatus.PRECONDITION_FAILED);
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.METHOD_NOT_ALLOWED);
     }
 }

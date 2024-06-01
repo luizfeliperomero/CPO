@@ -32,8 +32,7 @@ public class CredentialsTokenAuthFilter extends OncePerRequestFilter {
         if(!allowedUris.contains(uri)) {
             if(!("POST".equalsIgnoreCase(request.getMethod()) && uri.equals("/2.2.1/credentials/sender"))) {
                 if(authorizationHeader != null && authorizationHeader.startsWith("Token ")) {
-                    String base64Token = authorizationHeader.substring(6);
-                    String token = credentialsTokenService.decodeToken(base64Token);
+                    String token = this.credentialsTokenService.getTokenFromAuthorizationHeader(authorizationHeader);
                     if (!credentialsTokenService.isTokenValid(token)) {
                         response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                         return;
