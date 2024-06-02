@@ -18,5 +18,6 @@ public class PlatformInfo {
     private String token;
     private VersionNumber currentVersion;
     private List<VersionDetails> versions;
+    private Credentials credentials;
     private Credentials credentialsUsed;
 }

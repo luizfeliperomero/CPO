@@ -43,6 +43,18 @@ public class CredentialsController {
     }
 
     @SneakyThrows
+    @PutMapping
+    public void updateAsSender(@RequestHeader(value = "Authorization") String token) {
+       this.credentialsService.updateVersionAsSender(this.credentialsTokenService.getTokenFromAuthorizationHeader(token));
+    }
+
+    @SneakyThrows
+    @PutMapping
+    public void updateAsReceiver(@RequestHeader(value = "Authorization") String token) {
+        this.credentialsService.updateVersionAsReceiver(this.credentialsTokenService.getTokenFromAuthorizationHeader(token));
+    }
+
+    @SneakyThrows
     @DeleteMapping
     public ResponseEntity unregister(@RequestHeader(value = "Authorization") String token) {
         this.credentialsService.unregisterPlatform(this.credentialsTokenService.getTokenFromAuthorizationHeader(token));

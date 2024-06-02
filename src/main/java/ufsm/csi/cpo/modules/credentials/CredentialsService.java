@@ -15,7 +15,6 @@ import ufsm.csi.cpo.modules.types.Role;
 import ufsm.csi.cpo.modules.versions.*;
 
 import javax.net.ssl.HttpsURLConnection;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -28,6 +27,7 @@ import java.util.*;
 public class CredentialsService {
     private final CredentialsTokenService credentialsTokenService;
     private final PlatformData platformData;
+    private final VersionNumber versionNumber = VersionNumber.V2_1_1;
     private String tokenA;
 
     public CredentialsService(CredentialsTokenService credentialsTokenService) {
@@ -42,16 +42,16 @@ public class CredentialsService {
         throw new PlatformNotRegistered();
     }
 
-    public void unregisterPlatform(String token) throws PlatformNotRegistered {
+    public void unregisterPlatform(final String token) throws PlatformNotRegistered {
         var platforms = this.platformData.getPlatforms();
         if(this.platformData.getPlatforms().containsKey(token)) {
             platforms.remove(token);
         } else throw new PlatformNotRegistered();
     }
 
-    public Optional<Endpoint> getCredentialsEndpoint(Credentials credentials, String token, InterfaceRole otherPlatformRole) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
+    public Optional<Endpoint> getCredentialsEndpoint(final Credentials credentials, final String token, final InterfaceRole otherPlatformRole) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
         if(!this.platformData.getPlatforms().containsKey(token)) {
-            var platformInfo = PlatformInfo.builder()
+            final var platformInfo = PlatformInfo.builder()
                     .token(this.credentialsTokenService.decodeToken(credentials.getToken()))
                     .build();
             this.platformData.getPlatforms().put(token, platformInfo);
@@ -69,27 +69,36 @@ public class CredentialsService {
         } else throw new PlatformAlreadyRegistered();
     }
 
-    public Credentials registerAsSender(Credentials credentials, String tokenB) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
-        var credentialsEndpointOpt = getCredentialsEndpoint(credentials, tokenB, InterfaceRole.RECEIVER);
+    public Map.Entry<String, PlatformInfo> getPlatformByCredentials(final Credentials credentials) throws PlatformNotRegistered {
+        final var platformInfoOpt = this.platformData.getPlatforms().entrySet().stream()
+                .filter(e -> e.getValue().getToken().equals(credentials.getToken()))
+                .findFirst();
+        if(platformInfoOpt.isEmpty()) throw new PlatformNotRegistered();
+        return platformInfoOpt.get();
+    }
+
+    public Credentials registerAsSender(final Credentials credentials, final String tokenB) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
+        final var credentialsEndpointOpt = getCredentialsEndpoint(credentials, tokenB, InterfaceRole.RECEIVER);
         Credentials finalCredentials = null;
+        final var platform = this.platformData.getPlatforms().get(tokenB);
+        final var platforms = this.platformData.getPlatforms();
         if(credentialsEndpointOpt.isPresent()) {
-            var platforms = this.platformData.getPlatforms();
-            var platform = platforms.get(tokenB);
-            var credentialsEndpoint = credentialsEndpointOpt.get();
+            final var credentialsEndpoint = credentialsEndpointOpt.get();
             this.credentialsTokenService.validateToken(tokenB);
             platforms.remove(tokenB);
             platforms.put(tokenB, platform);
             finalCredentials = senderLogic(credentialsEndpoint, tokenB);
         }
-        System.out.println(this.platformData.getPlatforms().get(tokenB));
-        this.platformData.getPlatforms().get(tokenB).setCredentialsUsed(finalCredentials);
+        System.out.println(platform);
+        platform.setCredentialsUsed(finalCredentials);
+        platform.setCredentials(finalCredentials);
         return finalCredentials;
     }
 
-    public Credentials registerAsReceiver(Credentials credentials, String token) throws PlatformAlreadyRegistered, MalformedURLException, NoMutualVersion, JsonProcessingException {
-        var credentialsEndpointOpt = getCredentialsEndpoint(credentials, token, InterfaceRole.SENDER);
+    public Credentials registerAsReceiver(final Credentials credentials, final String token) throws PlatformAlreadyRegistered, MalformedURLException, NoMutualVersion, JsonProcessingException {
+        final var credentialsEndpointOpt = getCredentialsEndpoint(credentials, token, InterfaceRole.SENDER);
         var tokenC = "";
-        var platform = this.platformData.getPlatforms().get(token);
+        final var platform = this.platformData.getPlatforms().get(token);
         if(credentialsEndpointOpt.isPresent()) {
            tokenC = credentialsTokenService.generateToken();
            this.credentialsTokenService.validateToken(tokenC);
@@ -98,42 +107,97 @@ public class CredentialsService {
            this.credentialsTokenService.invalidateToken(this.tokenA);
         }
         System.out.println(this.platformData.getPlatforms().get(tokenC));
-        var credentialsRole = CredentialsRole.builder()
+        final var credentialsRole = CredentialsRole.builder()
                 .role(Role.CPO)
                 .partyId(new CiString("PSI"))
                 .countryCode(new CiString("BR"))
                 .build();
-        var platformCredentials = Credentials.builder()
+        final var platformCredentials = Credentials.builder()
                 .url(new URL(this.platformData.getServerUrl() + "/ocpi/cpo/versions"))
                 .token(this.credentialsTokenService.encodeToken(tokenC))
                 .roles(Arrays.asList(credentialsRole))
                 .build();
         platform.setCredentialsUsed(platformCredentials);
+        platform.setCredentials(platformCredentials);
         return platformCredentials;
     }
 
+    public void updateVersionAsSender(final String token) throws PlatformNotRegistered, JsonProcessingException, NoMutualVersion {
+        if(this.platformData.getPlatforms().containsKey(token)) {
+            final var platformInfo = this.platformData.getPlatforms().get(token);
+            final var otherPlatformCredentials = platformInfo.getCredentials();
+            final var objectMapper = new ObjectMapper();
+            final var versions = objectMapper.readValue(httpRequest(otherPlatformCredentials.getUrl(), "GET", otherPlatformCredentials.getToken()), new TypeReference<List<Version>>() {});
+            final var latestMutualVersion = getLatestMutualVersion(versions);
+            final var versionDetails = objectMapper.readValue(httpRequest(latestMutualVersion.getUrl(), "GET", otherPlatformCredentials.getToken()), new TypeReference<List<VersionDetails>>() {});
+            platformInfo.setVersions(versionDetails);
+            platformInfo.setCurrentVersion(latestMutualVersion.getVersion());
+            final var lastMutualVersionDetailOpt = versionDetails.stream()
+                    .filter(vd -> vd.getVersion().equals(latestMutualVersion.getVersion()))
+                    .findFirst();
+            if (lastMutualVersionDetailOpt.isPresent()) {
+                final var lastMutualVersionDetail = lastMutualVersionDetailOpt.get();
+                final var credentialsEndpointOpt = lastMutualVersionDetail.getEndpoints().stream()
+                        .filter(e -> e.getIdentifier().equals(ModuleID.credentials) && e.getRole().equals(InterfaceRole.RECEIVER))
+                        .findFirst();
+                if (credentialsEndpointOpt.isPresent()) {
+                    final var credentialsEndpoint = credentialsEndpointOpt.get();
+                    final var receiverUpdatedCredentials = objectMapper.readValue(httpRequest(credentialsEndpoint.getUrl(), "PUT", otherPlatformCredentials.getToken()), Credentials.class);
+                    platformInfo.setCredentials(receiverUpdatedCredentials);
+                }
+            }
+        }
+    }
+
+    public Credentials updateVersionAsReceiver(final String token) throws JsonProcessingException, NoMutualVersion {
+        final var platformInfo = this.platformData.getPlatforms().get(token);
+        final var credentials = platformInfo.getCredentials();
+        final var objectMapper = new ObjectMapper();
+        final var versions = objectMapper.readValue(httpRequest(credentials.getUrl(), "GET", credentials.getToken()), new TypeReference<List<Version>>() {});
+        final var versionOpt = versions.stream()
+                .filter(v -> v.getVersion().equals(versionNumber))
+                .findFirst();
+        if(versionOpt.isPresent()) {
+            final var version = versionOpt.get();
+            final var versionDetails = objectMapper.readValue(httpRequest(version.getUrl(), "GET", credentials.getToken()), new TypeReference<List<VersionDetails>>() {});
+            platformInfo.setVersions(versionDetails);
+            platformInfo.setCurrentVersion(versionNumber);
+            return platformInfo.getCredentials();
+        }
+        throw new NoMutualVersion("Couldn't find a compatible version to complete update");
+    }
+
+    public Version getLatestMutualVersion(final List<Version> versions) throws NoMutualVersion {
+        final var latestVersion = pickLatestMutualVersion(versions, this.platformData.getVersions());
+        final var versionOpt = versions.stream()
+                .filter(v -> v.getVersion().equals(latestVersion))
+                .findFirst();
+        if(versionOpt.isPresent()) return versionOpt.get();
+        throw new NoMutualVersion("Couldn't find a version match");
+}
+
     @SneakyThrows
-    public Credentials senderLogic(Endpoint endpoint, String tokenB) {
-        var credentialsRole = CredentialsRole.builder()
+    public Credentials senderLogic(final Endpoint endpoint, final String tokenB) {
+        final var credentialsRole = CredentialsRole.builder()
                 .role(Role.CPO)
                 .partyId(new CiString("PSI"))
                 .countryCode(new CiString("BR"))
                 .build();
-        var credentials = Credentials.builder()
+        final var credentials = Credentials.builder()
                 .url(new URL(this.platformData.getServerUrl() + "/ocpi/cpo/versions"))
                 .token(this.credentialsTokenService.encodeToken(tokenB))
                 .roles(Arrays.asList(credentialsRole))
                 .build();
-        var platformInfo = this.platformData.getPlatforms().get(tokenB);
-        var objectMapper = new ObjectMapper();
-        var otherPlatformCredentials = objectMapper.readValue(httpRequest(endpoint.getUrl(), "POST", platformInfo.getToken(), credentials), Credentials.class);
-        var tokenC = otherPlatformCredentials.getToken();
+        final var platformInfo = this.platformData.getPlatforms().get(tokenB);
+        final var objectMapper = new ObjectMapper();
+        final var otherPlatformCredentials = objectMapper.readValue(httpRequest(endpoint.getUrl(), "POST", platformInfo.getToken(), credentials), Credentials.class);
+        final var tokenC = otherPlatformCredentials.getToken();
         platformInfo.setToken(tokenC);
         return credentials;
     }
 
-    public Optional<VersionNumber> pickLatestMutualVersion(List<Version> lhs, List<Version> rhs) throws NoMutualVersion {
-        var mutualVersions = new ArrayList<VersionNumber>();
+    public VersionNumber pickLatestMutualVersion(final List<Version> lhs, final List<Version> rhs) throws NoMutualVersion {
+        final var mutualVersions = new ArrayList<VersionNumber>();
         lhs.forEach(vlhs -> {
             rhs.forEach(vrhs -> {
                 if (vlhs.getVersion().equals(vrhs.getVersion())) {
@@ -142,13 +206,13 @@ public class CredentialsService {
             });
         });
         if (!mutualVersions.isEmpty()) {
-            return Optional.of(getLatestVersion(mutualVersions));
+            return getLatestVersion(mutualVersions);
         } else throw new NoMutualVersion("No mutual version to establish communication");
     }
 
-    public VersionNumber getLatestVersion(List<VersionNumber> versions) {
+    public VersionNumber getLatestVersion(final List<VersionNumber> versions) {
         var latest = VersionNumber.min();
-        for(var version : versions) {
+        for(final var version : versions) {
             if(version.equals(VersionNumber.max())) {
                 latest = version;
             } else {
@@ -161,39 +225,36 @@ public class CredentialsService {
     }
 
 
-    public void retrieveClientInfo(Credentials credentials, String token) throws NoMutualVersion, JsonProcessingException {
+    public void retrieveClientInfo(final Credentials credentials, final String token) throws NoMutualVersion, JsonProcessingException {
             var response = httpRequest(credentials.getUrl(), "GET", this.credentialsTokenService.decodeToken(credentials.getToken()));
-            var objectMapper = new ObjectMapper();
-            var versions = objectMapper.readValue(response, new TypeReference<List<Version>>() {});
-            var latestMutualVersionNumberOpt = pickLatestMutualVersion(this.platformData.getVersions(), versions);
-            if(latestMutualVersionNumberOpt.isPresent()) {
-                VersionNumber latestMutualVersionNumber = latestMutualVersionNumberOpt.get();
-                var compatibleVersionOpt = versions.stream()
-                        .filter(v -> v.getVersion().equals(latestMutualVersionNumber))
-                        .findFirst();
-                if (compatibleVersionOpt.isPresent()) {
-                    var compatibleVersion = compatibleVersionOpt.get();
-                    response = httpRequest(compatibleVersion.getUrl(), "GET", this.credentialsTokenService.decodeToken(credentials.getToken()));
-                    var versionDetails = objectMapper.readValue(response, new TypeReference<List<VersionDetails>>() {
-                    });
-                    var platformInfo = this.platformData.getPlatforms().get(token);
-                    platformInfo.setVersions(versionDetails);
-                    platformInfo.setCurrentVersion(latestMutualVersionNumber);
-                    this.platformData.getPlatforms().put(token, platformInfo);
-                }
+            final var objectMapper = new ObjectMapper();
+            final var versions = objectMapper.readValue(response, new TypeReference<List<Version>>() {});
+            final var latestMutualVersionNumber = pickLatestMutualVersion(this.platformData.getVersions(), versions);
+            final var compatibleVersionOpt = versions.stream()
+                    .filter(v -> v.getVersion().equals(latestMutualVersionNumber))
+                    .findFirst();
+            if (compatibleVersionOpt.isPresent()) {
+                final var compatibleVersion = compatibleVersionOpt.get();
+                response = httpRequest(compatibleVersion.getUrl(), "GET", this.credentialsTokenService.decodeToken(credentials.getToken()));
+                final var versionDetails = objectMapper.readValue(response, new TypeReference<List<VersionDetails>>() {
+                });
+                final var platformInfo = this.platformData.getPlatforms().get(token);
+                platformInfo.setVersions(versionDetails);
+                platformInfo.setCurrentVersion(latestMutualVersionNumber);
+                this.platformData.getPlatforms().put(token, platformInfo);
             }
     }
 
     @SneakyThrows
-    public String httpRequest(URL url, String method, String token) {
+    public String httpRequest(final URL url, final String method, final String token) {
         System.out.println("Sending " + method + " request to: " + url);
-        var connection = (HttpURLConnection) url.openConnection();
+        final var connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(method);
         connection.setRequestProperty("Authorization", "Token " + credentialsTokenService.encodeToken(token));
-        var responseCode = connection.getResponseCode();
-        var sb = new StringBuilder();
+        final var responseCode = connection.getResponseCode();
+        final var sb = new StringBuilder();
         if(responseCode == HttpsURLConnection.HTTP_OK) {
-            var scanner = new Scanner(connection.getInputStream());
+            final var scanner = new Scanner(connection.getInputStream());
             while (scanner.hasNext()) {
                 sb.append(scanner.nextLine());
             }
@@ -202,17 +263,17 @@ public class CredentialsService {
     }
 
     @SneakyThrows
-    public String httpRequest(URL url, String method, String token, Credentials credentials) {
+    public String httpRequest(final URL url, final String method, final String token, final Credentials credentials) {
         System.out.println("Sending " + method + " request to: " + url);
-        var connection = (HttpURLConnection) url.openConnection();
+        final var connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(method);
         connection.setRequestProperty("Authorization", "Token " + credentialsTokenService.encodeToken(token));
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setDoOutput(true);
-        var om = new ObjectMapper();
-        var credentialsJson = om.writeValueAsString(credentials);
-        try (var os = connection.getOutputStream();
-             var osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
+        final var om = new ObjectMapper();
+        final var credentialsJson = om.writeValueAsString(credentials);
+        try (final var os = connection.getOutputStream();
+             final var osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
             osw.write(credentialsJson);
             osw.flush();
         } catch(Error e) {
@@ -220,10 +281,10 @@ public class CredentialsService {
         }
         connection.connect();
 
-        var responseCode = connection.getResponseCode();
-        var sb = new StringBuilder();
+        final var responseCode = connection.getResponseCode();
+        final var sb = new StringBuilder();
         if(responseCode == HttpURLConnection.HTTP_OK) {
-            Scanner scanner = new Scanner(connection.getInputStream());
+            final Scanner scanner = new Scanner(connection.getInputStream());
             while (scanner.hasNext()) {
                 sb.append(scanner.nextLine());
             }
