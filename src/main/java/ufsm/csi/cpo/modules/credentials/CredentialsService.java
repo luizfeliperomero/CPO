@@ -42,15 +42,14 @@ public class CredentialsService {
         throw new PlatformNotRegistered();
     }
 
-    public void unregisterPlatform(Credentials credentials, String token) throws PlatformNotRegistered {
+    public void unregisterPlatform(String token) throws PlatformNotRegistered {
         var platforms = this.platformData.getPlatforms();
         if(this.platformData.getPlatforms().containsKey(token)) {
             platforms.remove(token);
-            this.platformData.getValidCredentialsTokens().remove(this.credentialsTokenService.decodeToken(credentials.getToken()));
         } else throw new PlatformNotRegistered();
     }
 
-    public Optional<Endpoint> getCredentialsEndpoint(Credentials credentials, String token,InterfaceRole otherPlatformRole) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
+    public Optional<Endpoint> getCredentialsEndpoint(Credentials credentials, String token, InterfaceRole otherPlatformRole) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
         if(!this.platformData.getPlatforms().containsKey(token)) {
             var platformInfo = PlatformInfo.builder()
                     .token(this.credentialsTokenService.decodeToken(credentials.getToken()))
@@ -70,20 +69,20 @@ public class CredentialsService {
         } else throw new PlatformAlreadyRegistered();
     }
 
-    public Credentials registerAsSender(Credentials credentials, String token) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
-        var credentialsEndpointOpt = getCredentialsEndpoint(credentials, token, InterfaceRole.RECEIVER);
+    public Credentials registerAsSender(Credentials credentials, String tokenB) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
+        var credentialsEndpointOpt = getCredentialsEndpoint(credentials, tokenB, InterfaceRole.RECEIVER);
         Credentials finalCredentials = null;
         if(credentialsEndpointOpt.isPresent()) {
-            var platform = this.platformData.getPlatforms().get(token);
-            Endpoint credentialsEndpoint = credentialsEndpointOpt.get();
-            String tokenB = credentialsTokenService.generateToken();
+            var platforms = this.platformData.getPlatforms();
+            var platform = platforms.get(tokenB);
+            var credentialsEndpoint = credentialsEndpointOpt.get();
             this.credentialsTokenService.validateToken(tokenB);
-            this.platformData.getPlatforms().remove(token);
-            this.platformData.getPlatforms().put(tokenB, platform);
-            finalCredentials = senderLogic(credentialsEndpoint, tokenB, token);
+            platforms.remove(tokenB);
+            platforms.put(tokenB, platform);
+            finalCredentials = senderLogic(credentialsEndpoint, tokenB);
         }
-        System.out.println(this.platformData.getPlatforms().get(token));
-        this.platformData.getPlatforms().get(token).setCredentialsUsed(finalCredentials);
+        System.out.println(this.platformData.getPlatforms().get(tokenB));
+        this.platformData.getPlatforms().get(tokenB).setCredentialsUsed(finalCredentials);
         return finalCredentials;
     }
 
@@ -114,7 +113,7 @@ public class CredentialsService {
     }
 
     @SneakyThrows
-    public Credentials senderLogic(Endpoint endpoint, String tokenB, String token) {
+    public Credentials senderLogic(Endpoint endpoint, String tokenB) {
         var credentialsRole = CredentialsRole.builder()
                 .role(Role.CPO)
                 .partyId(new CiString("PSI"))
@@ -125,7 +124,7 @@ public class CredentialsService {
                 .token(this.credentialsTokenService.encodeToken(tokenB))
                 .roles(Arrays.asList(credentialsRole))
                 .build();
-        var platformInfo = this.platformData.getPlatforms().get(token);
+        var platformInfo = this.platformData.getPlatforms().get(tokenB);
         var objectMapper = new ObjectMapper();
         var otherPlatformCredentials = objectMapper.readValue(httpRequest(endpoint.getUrl(), "POST", platformInfo.getToken(), credentials), Credentials.class);
         var tokenC = otherPlatformCredentials.getToken();

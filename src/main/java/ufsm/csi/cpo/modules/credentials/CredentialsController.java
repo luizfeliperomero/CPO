@@ -32,8 +32,8 @@ public class CredentialsController {
 
     @SneakyThrows
     @PostMapping("/sender")
-    public Credentials registerAsSender(@RequestHeader(value = "Authorization") String token, @RequestBody Credentials credentials) {
-        return this.credentialsService.registerAsSender(credentials, this.credentialsTokenService.getTokenFromAuthorizationHeader(token));
+    public Credentials registerAsSender(@RequestHeader(value = "Authorization") String tokenB, @RequestBody Credentials credentials) {
+        return this.credentialsService.registerAsSender(credentials, this.credentialsTokenService.getTokenFromAuthorizationHeader(tokenB));
     }
 
     @SneakyThrows
@@ -44,8 +44,8 @@ public class CredentialsController {
 
     @SneakyThrows
     @DeleteMapping
-    public ResponseEntity unregister(@RequestHeader(value = "Authorization") String token, Credentials credentials) {
-        this.credentialsService.unregisterPlatform(credentials, this.credentialsTokenService.getTokenFromAuthorizationHeader(token));
+    public ResponseEntity unregister(@RequestHeader(value = "Authorization") String token) {
+        this.credentialsService.unregisterPlatform(this.credentialsTokenService.getTokenFromAuthorizationHeader(token));
         return ResponseEntity.ok("");
     }
 }
