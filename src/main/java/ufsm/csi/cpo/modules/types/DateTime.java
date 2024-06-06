@@ -19,18 +19,16 @@ public class DateTime {
         this.dateTime = parseTimestamp(timestamp);
     }
 
-    public static DateTime now() {
+    public DateTime now() {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         return new DateTime(now.toString());
     }
 
     private OffsetDateTime parseTimestamp(String timestamp) {
         try {
-            // Try parsing as an offset datetime (with time zone designator)
             return OffsetDateTime.parse(timestamp, formatterWithZone);
         } catch (DateTimeParseException e1) {
             try {
-                // If that fails, try parsing as a local datetime and assume UTC
                     return OffsetDateTime.parse(timestamp, formatterWithoutZone).withOffsetSameInstant(ZoneOffset.UTC);
                 } catch (DateTimeParseException e2) {
                     throw new IllegalArgumentException("Invalid RFC 3339 timestamp: " + timestamp, e2);

@@ -11,6 +11,7 @@ import ufsm.csi.cpo.exceptions.NoMutualVersion;
 import ufsm.csi.cpo.exceptions.PlatformAlreadyRegistered;
 import ufsm.csi.cpo.exceptions.PlatformNotRegistered;
 import ufsm.csi.cpo.modules.types.CiString;
+import ufsm.csi.cpo.modules.types.Response;
 import ufsm.csi.cpo.modules.types.Role;
 import ufsm.csi.cpo.modules.versions.*;
 
@@ -190,7 +191,8 @@ public class CredentialsService {
                 .build();
         final var platformInfo = this.platformData.getPlatforms().get(tokenB);
         final var objectMapper = new ObjectMapper();
-        final var otherPlatformCredentials = objectMapper.readValue(httpRequest(endpoint.getUrl(), "POST", platformInfo.getToken(), credentials), Credentials.class);
+        final var otherPlatformCredentialsResponse = objectMapper.readValue(httpRequest(endpoint.getUrl(), "POST", platformInfo.getToken(), credentials), Response.class);
+        final var otherPlatformCredentials = (Credentials) otherPlatformCredentialsResponse.getData();
         final var tokenC = otherPlatformCredentials.getToken();
         platformInfo.setToken(tokenC);
         return credentials;
