@@ -28,4 +28,10 @@ public class Response <T> {
         this.statusMessage = statusMessage;
         this.timestamp = timestamp;
     }
+
+    public Response (int statusCode, String statusMessage, Date timestamp) {
+        this.statusCode = statusCode;
+        this.statusMessage = statusMessage;
+        this.timestamp = timestamp;
+    }
 }
