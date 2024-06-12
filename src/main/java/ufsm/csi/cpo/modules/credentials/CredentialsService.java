@@ -191,8 +191,9 @@ public class CredentialsService {
                 .build();
         final var platformInfo = this.platformData.getPlatforms().get(tokenB);
         final var objectMapper = new ObjectMapper();
-        final var otherPlatformCredentialsResponse = objectMapper.readValue(httpRequest(endpoint.getUrl(), "POST", platformInfo.getToken(), credentials), Response.class);
-        final var otherPlatformCredentials = (Credentials) otherPlatformCredentialsResponse.getData();
+        final var typeReference = new TypeReference<Response<Credentials>>(){};
+        final var otherPlatformCredentialsResponse = objectMapper.readValue(httpRequest(endpoint.getUrl(), "POST", platformInfo.getToken(), credentials), typeReference);
+        final var otherPlatformCredentials = otherPlatformCredentialsResponse.getData();
         final var tokenC = otherPlatformCredentials.getToken();
         platformInfo.setToken(tokenC);
         return credentials;
