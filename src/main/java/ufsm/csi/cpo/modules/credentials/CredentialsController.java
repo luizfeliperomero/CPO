@@ -26,7 +26,6 @@ public class CredentialsController {
     public Response<Credentials> getCredentials(@RequestHeader(value = "Authorization") String token) {
         return new Response<>(this.credentialsService.getCredentials(this.credentialsTokenService.getTokenFromAuthorizationHeader(token)),
                 1000,
-                "",
                 new Date());
     }
 
@@ -37,16 +36,14 @@ public class CredentialsController {
         this.credentialsService.setTokenA(token);
         return new Response<>(this.credentialsTokenService.encodeToken(token),
                 1000,
-                "",
                 new Date());
     }
 
     @SneakyThrows
     @PostMapping("/sender")
     public Response<Credentials> registerAsSender(@RequestHeader(value = "Authorization") String tokenB, @RequestBody Credentials credentials) {
-        return new Response<>(this.credentialsService.registerAsSender(credentials, this.credentialsTokenService.getTokenFromAuthorizationHeader(tokenB)),
+        return new Response<Credentials>(this.credentialsService.registerAsSender(credentials, this.credentialsTokenService.getTokenFromAuthorizationHeader(tokenB)),
                 1000,
-                "",
                 new Date()
                 );
     }
@@ -54,9 +51,8 @@ public class CredentialsController {
     @SneakyThrows
     @PostMapping("/receiver")
     public Response<Credentials> registerAsReceiver(@RequestHeader(value = "Authorization") String token, @RequestBody Credentials credentials) {
-        return new Response<>(this.credentialsService.registerAsReceiver(credentials, this.credentialsTokenService.getTokenFromAuthorizationHeader(token)),
+        return new Response<Credentials>(this.credentialsService.registerAsReceiver(credentials, this.credentialsTokenService.getTokenFromAuthorizationHeader(token)),
                 1000,
-                "",
                 new Date()
                 );
     }
@@ -69,14 +65,17 @@ public class CredentialsController {
 
     @SneakyThrows
     @PutMapping("/receiver")
-    public void updateAsReceiver(@RequestHeader(value = "Authorization") String token) {
-        this.credentialsService.updateVersionAsReceiver(this.credentialsTokenService.getTokenFromAuthorizationHeader(token));
+    public Response<Credentials> updateAsReceiver(@RequestHeader(value = "Authorization") String token) {
+        return new Response<>(this.credentialsService.updateVersionAsReceiver(this.credentialsTokenService.getTokenFromAuthorizationHeader(token)),
+                1000,
+                new Date()
+                );
     }
 
     @SneakyThrows
     @DeleteMapping
-    public ResponseEntity unregister(@RequestHeader(value = "Authorization") String token) {
+    public Response<String> unregister(@RequestHeader(value = "Authorization") String token) {
         this.credentialsService.unregisterPlatform(this.credentialsTokenService.getTokenFromAuthorizationHeader(token));
-        return ResponseEntity.ok("");
+        return new Response<>(1000, "Platform successfully unregistered", new Date());
     }
 }

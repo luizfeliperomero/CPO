@@ -78,17 +78,14 @@ public class CredentialsService {
         return platformInfoOpt.get();
     }
 
-    public Credentials registerAsSender(final Credentials credentials, final String tokenB) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
-        final var credentialsEndpointOpt = getCredentialsEndpoint(credentials, tokenB, InterfaceRole.RECEIVER);
+    public Credentials registerAsSender(final Credentials credentials, final String token) throws PlatformAlreadyRegistered, NoMutualVersion, JsonProcessingException {
+        final var credentialsEndpointOpt = getCredentialsEndpoint(credentials, token, InterfaceRole.RECEIVER);
         Credentials finalCredentials = null;
-        final var platform = this.platformData.getPlatforms().get(tokenB);
-        final var platforms = this.platformData.getPlatforms();
+        final var platform = this.platformData.getPlatforms().get(token);
         if(credentialsEndpointOpt.isPresent()) {
             final var credentialsEndpoint = credentialsEndpointOpt.get();
-            this.credentialsTokenService.validateToken(tokenB);
-            platforms.remove(tokenB);
-            platforms.put(tokenB, platform);
-            finalCredentials = senderLogic(credentialsEndpoint, tokenB);
+            this.credentialsTokenService.validateToken(token);
+            finalCredentials = senderLogic(credentialsEndpoint, token);
         }
         System.out.println(platform);
         platform.setCredentialsUsed(finalCredentials);
@@ -96,18 +93,17 @@ public class CredentialsService {
         return finalCredentials;
     }
 
-    public Credentials registerAsReceiver(final Credentials credentials, final String token) throws PlatformAlreadyRegistered, MalformedURLException, NoMutualVersion, JsonProcessingException {
-        final var credentialsEndpointOpt = getCredentialsEndpoint(credentials, token, InterfaceRole.SENDER);
+    public Credentials registerAsReceiver(final Credentials credentials, final String tokenB) throws PlatformAlreadyRegistered, MalformedURLException, NoMutualVersion, JsonProcessingException {
+        final var credentialsEndpointOpt = getCredentialsEndpoint(credentials, tokenB, InterfaceRole.SENDER);
         var tokenC = "";
-        final var platform = this.platformData.getPlatforms().get(token);
+        final var platform = this.platformData.getPlatforms().get(tokenB);
         if(credentialsEndpointOpt.isPresent()) {
            tokenC = credentialsTokenService.generateToken();
            this.credentialsTokenService.validateToken(tokenC);
-           this.platformData.getPlatforms().remove(token);
+           this.platformData.getPlatforms().remove(tokenB);
            this.platformData.getPlatforms().put(tokenC, platform);
            this.credentialsTokenService.invalidateToken(this.tokenA);
         }
-        System.out.println(this.platformData.getPlatforms().get(tokenC));
         final var credentialsRole = CredentialsRole.builder()
                 .role(Role.CPO)
                 .partyId(new CiString("PSI"))
@@ -120,6 +116,9 @@ public class CredentialsService {
                 .build();
         platform.setCredentialsUsed(platformCredentials);
         platform.setCredentials(platformCredentials);
+        System.out.println(platform);
+        var encodedToken = this.credentialsTokenService.encodeToken(platform.getToken());
+        System.out.println("Token codificado: " + encodedToken);
         return platformCredentials;
     }
 
@@ -143,8 +142,9 @@ public class CredentialsService {
                         .findFirst();
                 if (credentialsEndpointOpt.isPresent()) {
                     final var credentialsEndpoint = credentialsEndpointOpt.get();
-                    final var receiverUpdatedCredentials = objectMapper.readValue(httpRequest(credentialsEndpoint.getUrl(), "PUT", otherPlatformCredentials.getToken()), Credentials.class);
-                    platformInfo.setCredentials(receiverUpdatedCredentials);
+                    final var receiverUpdatedCredentials = objectMapper.readValue(httpRequest(credentialsEndpoint.getUrl(), "PUT", otherPlatformCredentials.getToken()), new TypeReference<Response<Credentials>>() {
+                    });
+                    platformInfo.setCredentials(receiverUpdatedCredentials.getData());
                 }
             }
         }

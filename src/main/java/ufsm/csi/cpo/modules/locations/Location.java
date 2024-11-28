@@ -3,6 +3,9 @@ package ufsm.csi.cpo.modules.locations;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import ufsm.csi.cpo.modules.types.CiString;
 import ufsm.csi.cpo.modules.types.DateTime;
 import ufsm.csi.cpo.modules.types.DisplayText;
@@ -11,6 +14,9 @@ import java.sql.Timestamp;
 import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Location {
     private CiString countryCode;
     private CiString partyId;
